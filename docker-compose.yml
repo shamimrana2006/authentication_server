@@ -9,6 +9,7 @@ services:
       - prod
       - dev
       - server
+      - db
     env_file:
       - .env
     environment:
@@ -36,6 +37,7 @@ services:
       - prisma
       - prod
       - server
+      - db
     env_file:
       - .env
     environment:
