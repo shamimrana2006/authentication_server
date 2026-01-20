@@ -1,0 +1,51 @@
+### Test Token Refresh Flow for auth/me endpoint
+
+### 1. Login to get tokens
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "emailOrUsername": "test@example.com",
+  "password": "password123"
+}
+
+###
+@accessToken = {{login.response.body.access_token}}
+@refreshToken = {{login.response.body.refresh_token}}
+
+### 2. Test with VALID access token and VALID refresh token
+# Expected: Should return user data normally
+GET http://localhost:3000/auth/me
+Authorization: Bearer {{accessToken}}
+X-Refresh-Token: {{refreshToken}}
+
+### 3. Wait for access token to expire (10 seconds based on your config)
+# Then test with INVALID access token and VALID refresh token
+# Expected: Should auto-refresh and return new tokens in headers
+GET http://localhost:3000/auth/me
+Authorization: Bearer {{accessToken}}
+X-Refresh-Token: {{refreshToken}}
+
+### 4. Test with VALID access token and INVALID refresh token
+# Expected: Should generate new refresh token
+GET http://localhost:3000/auth/me
+Authorization: Bearer {{accessToken}}
+X-Refresh-Token: invalid_refresh_token_here
+
+### 5. Test with INVALID access token and INVALID refresh token
+# Expected: Should return user: null, success: false
+GET http://localhost:3000/auth/me
+Authorization: Bearer invalid_access_token
+X-Refresh-Token: invalid_refresh_token
+
+### 6. Test with cookies (if using browser)
+GET http://localhost:3000/auth/me
+
+### 7. Logout
+POST http://localhost:3000/auth/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

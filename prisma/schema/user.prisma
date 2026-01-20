@@ -1,0 +1,76 @@
+// Simple User Model for Authentication
+model User {
+    id       String  @id @default(uuid())
+    email    String  @unique
+    username String? @unique
+    password String? // Hashed password (null for OAuth users)
+
+    // Profile
+    name   String?
+    avatar String  @default("https://i.pinimg.com/236x/1a/a8/d7/1aa8d75f3498784bcd2617b3e3d1e0c4.jpg")
+
+    // Email Verification
+    emailVerified           Boolean   @default(false)
+    emailVerificationOtp    String?
+    emailVerificationExpiry DateTime?
+
+    // Password Reset
+    resetPasswordOtp       String?
+    resetPasswordOtpExpiry DateTime?
+    resetPasswordVerified  Boolean   @default(false)
+
+    // OAuth Providers
+    googleId String? @unique
+    githubId String? @unique
+    discord  String? @unique
+
+    // Role & Status
+    role     UserRole @default(USER)
+    isActive Boolean  @default(true)
+
+    // Timestamps
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    refreshTokens RefreshToken[]
+    sessions      Session[]
+
+    @@index([email])
+    @@map("users")
+}
+
+enum UserRole {
+    SUPER_ADMIN
+    ADMIN
+    USER
+}
+
+// Refresh Token for JWT
+model RefreshToken {
+    id        String   @id @default(uuid())
+    token     String   @unique
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+
+    @@index([userId])
+    @@map("refresh_tokens")
+}
+
+// Session tracking for multi-device support
+model Session {
+    id           String   @id @default(uuid())
+    userId       String
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    deviceInfo   String?
+    ipAddress    String?
+    refreshToken String   @unique
+    expiresAt    DateTime
+    createdAt    DateTime @default(now())
+    lastActivity DateTime @default(now())
+
+    @@index([userId])
+    @@map("sessions")
+}

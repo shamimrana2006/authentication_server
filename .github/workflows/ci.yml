@@ -1,0 +1,91 @@
+on:
+  push:
+    branches:
+      - dev
+      - main
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: install pnpm globally
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm i
+
+      - name: Run tests
+        run: pnpm format
+
+      - name: Run build
+        run: pnpm build
+
+  build-and-push-docker-image:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: shamimrana2006/server:latest
+  deploy:
+        name: Deploy
+        runs-on: ubuntu-latest
+        needs: build-and-push-docker-image
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKER_USERNAME }}
+                  password: ${{ secrets.DOCKER_PASSWORD }}
+
+            - name: Copy Compose File
+              uses: appleboy/scp-action@v0.1.7
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ${{ secrets.EC2_USER }}
+                  key: ${{ secrets.EC2_SSH_KEY }}
+                  source: "docker-compose.yml"
+                  target: "/home/${{ secrets.EC2_USER }}/server"
+
+            - name: Deploy via SSH
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ${{ secrets.EC2_USER }}
+                  key: ${{ secrets.EC2_SSH_KEY }}
+                  script: |
+                      cd /home/${{ secrets.EC2_USER }}/server
+                      # Pull the latest images
+                      sudo docker compose --profile prod pull
+
+                      # Stop and remove existing containers safely
+                      sudo docker compose --profile prod down --remove-orphans
+
+                      # Start containers in detached mode
+                      sudo docker compose --profile prod up -d
+
+                      # Prune unused Docker objects (optional, cleans disk)
+                      sudo docker system prune -f

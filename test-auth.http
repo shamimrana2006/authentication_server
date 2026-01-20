@@ -1,0 +1,171 @@
+### Variables
+@baseUrl = http://localhost:3000
+@email = test@example.com
+@password = Test123456
+@accessToken = your-access-token-here
+@refreshToken = your-refresh-token-here
+@otp = 123456
+
+### ==================== Registration & Login ====================
+
+### 1. Register a new user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "username": "testuser"
+}
+
+### 2. Verify email with OTP
+POST {{baseUrl}}/auth/verify-email
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "otp": "{{otp}}"
+}
+
+### 3. Resend verification OTP
+POST {{baseUrl}}/auth/resend-verification-otp
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### 4. Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "emailOrUsername": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 5. Refresh access token
+POST {{baseUrl}}/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 6. Logout (current device)
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### ==================== Password Management ====================
+
+### 7. Forgot password (send reset OTP)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### 8. Verify reset OTP
+POST {{baseUrl}}/auth/verify-reset-otp
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "otp": "{{otp}}"
+}
+
+### 9. Reset password
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "newPassword": "NewPassword123"
+}
+
+### 10. Resend reset OTP
+POST {{baseUrl}}/auth/resend-reset-otp
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### 11. Change password (when logged in)
+PUT {{baseUrl}}/auth/change-password
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currentPassword": "{{password}}",
+  "newPassword": "NewPassword123"
+}
+
+### ==================== Username Management ====================
+
+### 12. Check username availability (Guest)
+POST {{baseUrl}}/auth/check-username
+Content-Type: application/json
+
+{
+  "username": "newusername"
+}
+
+### 12.1 Check username availability (Logged-in User)
+POST {{baseUrl}}/auth/check-username
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "username": "shamimrana"
+}
+
+### 13. Update username
+PUT {{baseUrl}}/auth/update-username
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "username": "newusername"
+}
+
+### 14. Forgot username (send to email)
+POST {{baseUrl}}/auth/forgot-username
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### ==================== User Profile ====================
+
+### 15. Get current user info
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{accessToken}}
+
+### 16. Update profile
+PUT {{baseUrl}}/auth/profile
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Updated Name",
+  "avatar": "https://example.com/new-avatar.jpg"
+}
+
+### ==================== Security ====================
+
+### 17. Get active sessions
+GET {{baseUrl}}/auth/sessions
+Authorization: Bearer {{accessToken}}
+
+### 18. Logout from all devices
+DELETE {{baseUrl}}/auth/logout-all
+Authorization: Bearer {{accessToken}}
