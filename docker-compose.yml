@@ -40,7 +40,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NODE_ENV: production
     ports:
-      - '5090:5090'
+      - '5090:6545'
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
     env_file:
       - .env.local
     ports:
-      - '5080:5080'
+      - '5080:8545'
     networks:
       - app-network
 
