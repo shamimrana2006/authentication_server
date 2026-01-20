@@ -13,6 +13,5 @@ db.shamimrana.me {
      basicauth {
         shamimrana2006 $2y$10$/x6ntJtyiAp/NAJlWZlYK.ikj517KYpgqgC.pg4xY32LrLpH6qc6y
     }
-
     reverse_proxy localhost:7896
 }
