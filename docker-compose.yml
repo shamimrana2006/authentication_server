@@ -27,6 +27,25 @@ services:
     networks:
       - app-network
   
+  prisma-studio:
+    image: prismagraphql/prisma-studio:latest
+    container_name: prisma_studio
+    restart: unless-stopped
+    profiles:
+      - dev
+      - prisma
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    ports:
+      - '6525:5555'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+  
 
 
   server:

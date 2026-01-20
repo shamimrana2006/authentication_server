@@ -7,3 +7,8 @@ shamimrana.me {
 api.shamimrana.me {
     reverse_proxy server:6545
 }
+
+# Admin Panel
+db.shamimrana.me {
+    reverse_proxy localhost:6525
+}
