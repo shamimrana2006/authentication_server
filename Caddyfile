@@ -1,0 +1,9 @@
+# Frontend
+shamimrana.me {
+    reverse_proxy frontend:8545
+}
+
+# Backend API
+api.shamimrana.me {
+    reverse_proxy server:6545
+}
