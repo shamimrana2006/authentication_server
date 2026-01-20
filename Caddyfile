@@ -8,7 +8,7 @@ api.shamimrana.me {
     reverse_proxy server:6545
 }
 
-# Admin Panel
+# prisma studio
 db.shamimrana, db.shamimrana.me {
-    reverse_proxy pgadmin:80
+    reverse_proxy prisma_studio:7896
 }
