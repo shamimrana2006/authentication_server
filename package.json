@@ -23,7 +23,7 @@
     "reset": "npx prisma migrate reset --force && npx prisma generate",
     "mgsdev": "npx prisma migrate dev && npx prisma generate && nest start --watch",
     "rmgsdev": "rmdir /s /q prisma\\migrations 2>nul & rmdir /s /q prisma\\generated 2>nul & npx prisma migrate reset --force && npx prisma migrate dev && npx prisma generate && nest start --watch",
-    "git": "git add . && git commit -m \"update emergency\" && git push origin main",
+    "git": "git add . && git commit -m \"update emergency\" && git push",
     "prisma:deploy": "npx prisma generate && npx prisma migrate deploy",
     "server:run:under:dockerimage": "npx prisma generate && npx prisma migrate deploy && node dist/src/main",
     "studio": "npx prisma studio"
