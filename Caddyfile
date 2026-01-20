@@ -9,6 +9,6 @@ api.shamimrana.me {
 }
 
 # Admin Panel
-db.shamimrana.me {
-    reverse_proxy localhost:6525
+db.shamimrana, db.shamimrana.me {
+    reverse_proxy pgadmin:80
 }
