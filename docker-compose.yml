@@ -34,6 +34,8 @@ services:
     profiles:
       - dev
       - prisma
+      - prod
+      - server
     env_file:
       - .env
     environment:
