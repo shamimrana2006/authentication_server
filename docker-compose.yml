@@ -1,5 +1,3 @@
-
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -27,26 +25,24 @@ services:
     networks:
       - app-network
 
-  pgadmin:
-      image: dpage/pgadmin4:latest
-      container_name: pgadmin
-      restart: unless-stopped
-      profiles:
-        - dev
-        - prod
-      ports:
-        - '5050:80'
-      environment:
-        PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@local.host}
-        PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-      volumes:
-        - pgadmin_data:/var/lib/pgadmin
-      depends_on:
-        - postgres
-      networks:
-        - app-network
-  
-
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: pgadmin
+  #   restart: unless-stopped
+  #   profiles:
+  #     - dev
+  #     - prod
+  #   ports:
+  #     - '5050:80'
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@local.host}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - app-network
 
   server:
     image: shamimrana2006/server:latest
@@ -79,6 +75,27 @@ services:
       - .env.local
     ports:
       - '5080:8545'
+    networks:
+      - app-network
+
+  prisma-studio:
+    image: shamimrana2006/server:latest
+    container_name: prisma_studio
+    restart: unless-stopped
+    profiles:
+      - prod
+      - dev
+      - server
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    ports:
+      - '7896:5555'
+    command: npx prisma studio --port 5555 --browser none
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
 
