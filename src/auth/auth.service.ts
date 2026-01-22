@@ -134,7 +134,7 @@ export class AuthService {
       'EMAIL_VERIFICATION_REQUIRED',
     );
     if (verificationRequired === 'true') {
-      // Check if email is verified
+      // Check if email verification is required
       if (!user.emailVerified) {
         throw new UnauthorizedException(
           'Please verify your email before logging in',
@@ -158,14 +158,23 @@ export class AuthService {
       Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) ||
       7;
     // const refreshTokenExpirationDays = Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) || 7;
-    const accessToken = this.jwtService.sign(user, {
+    
+    // Minimal token payload - only essential claims
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+    
+    const accessToken = this.jwtService.sign(tokenPayload, {
       // expiresIn: `${accessTokenExpiration}m`,
-      expiresIn: '10s',
+      expiresIn: this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS'),
     } as any);
 
-    const refreshToken = this.jwtService.sign(user, {
+    const refreshToken = this.jwtService.sign(tokenPayload, {
       // expiresIn: `${refreshTokenExpiration}d`,
-      expiresIn: '20s',
+      expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'),
     } as any);
 
     // Store refresh token in session
@@ -183,6 +192,64 @@ export class AuthService {
       access_token: accessToken,
       refresh_token: refreshToken,
     };
+  }
+
+  async generateRefreshTokenOnly(user: any, oldRefreshToken?: string) {
+    const refreshTokenExpiration =
+      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) ||
+      7;
+
+    // Delete old session if refresh token provided
+    if (oldRefreshToken) {
+      try {
+        await this.Prisma.client.session.deleteMany({
+          where: { refreshToken: oldRefreshToken },
+        });
+      } catch (err) {
+        // Session might already be deleted, that's fine
+      }
+    }
+
+    // Minimal token payload - only essential claims
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+
+    const refreshToken = this.jwtService.sign(tokenPayload, {
+      expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'),
+    } as any);
+
+    // Create new session with new refresh token
+    await this.Prisma.client.session.create({
+      data: {
+        userId: user.id,
+        refreshToken,
+        expiresAt: new Date(
+          Date.now() + refreshTokenExpiration * 24 * 60 * 60 * 1000,
+        ),
+      },
+    });
+
+    return refreshToken;
+  }
+
+  async generateAccessTokenOnly(user: any) {
+    // Minimal token payload - only essential claims
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+
+    const accessToken = this.jwtService.sign(tokenPayload, {
+      expiresIn: this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS'),
+    } as any);
+
+    return accessToken;
   }
 
   async validateRefreshToken(userId: string, refreshToken: string) {
@@ -596,16 +663,12 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.Prisma.client.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        name: true,
-        avatar: true,
-        emailVerified: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
+      omit: {
+        password: true,
+        emailVerificationOtp: true,
+        emailVerificationExpiry: true,
+        resetPasswordOtp: true,
+        resetPasswordOtpExpiry: true,
       },
     });
 

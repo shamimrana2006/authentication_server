@@ -25,11 +25,16 @@ import { UpdateUsernameDto } from './dto/update-username.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { OptionalJwtGuard } from '@/common/optional-auth.guard';
+import { ConfigService } from '@nestjs/config';
+import { access } from 'node:fs';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // ==================== Registration & Login ====================
 
@@ -59,14 +64,14 @@ export class AuthController {
       httpOnly: false, // Allow JavaScript access in dev for Swagger
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS'), // 15 seconds
     });
 
     res.cookie('refresh_token', result.refresh_token, {
       httpOnly: false, // Allow JavaScript access in dev for Swagger
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS'), // 20 seconds
     });
 
     // Also send tokens in response headers for easy copy-paste in Swagger
@@ -84,24 +89,45 @@ export class AuthController {
     summary: 'Get current user profile (supports auto token refresh)',
   })
   async getMe(@Req() req: any, @Res({ passthrough: true }) res: any) {
-    if (!req.user) {
-      return {
-        success: false,
-        message: 'Not authenticated - both tokens invalid',
-        user: null,
-      };
-    }
-    const user = await this.authService.getMe(req.user.id);
+    // if (!req.user) {
+    //   return {
+    //     success: false,
+    //     message: 'Not authenticated - both tokens invalid',
+    //     user: null,
+    //   };
+    // }
+    // const user = await this.authService.getMe(req.user.id);
 
-    // Check if new tokens were issued (they'll be in response headers)
-    const newAccessToken = res.getHeader('X-New-Access-Token');
-    const newRefreshToken = res.getHeader('X-New-Refresh-Token');
+    // // Check if new tokens were issued (from headers or locals)
+    // const newAccessToken =
+    //   res.getHeader('X-New-Access-Token') || res.locals?.newAccessToken;
+    // const newRefreshToken =
+    //   res.getHeader('X-New-Refresh-Token') || res.locals?.newRefreshToken;
+
+    // const response: any = {
+    //   success: true,
+    //   user,
+    //   tokensRefreshed: !!(newAccessToken || newRefreshToken),
+    // };
+
+    // // Include regenerated tokens in response if available
+    // if (newAccessToken) {
+    //   response.newAccessToken = newAccessToken;
+    // }
+    // if (newRefreshToken) {
+    //   response.newRefreshToken = newRefreshToken;
+    // }
+
+    // return response;
+
+   
 
     return {
       success: true,
-      user,
-      tokensRefreshed: !!(newAccessToken && newRefreshToken),
-    };
+      message: 'just call it',
+      accessToken: res.locals?.activeAccessToken,
+      refreshToken: res.locals?.activeRefreshToken,
+    }
   }
 
   @Post('logout')
@@ -128,7 +154,7 @@ export class AuthController {
   @Post('refresh-token')
   @ApiOperation({
     summary:
-      'Refresh access token using refresh token (updates cookies + headers)',
+      'Refresh access token using refresh token (returns new tokens + sets cookies)',
   })
   async refreshToken(
     @Body() body: RefreshTokenDto,
@@ -138,26 +164,40 @@ export class AuthController {
 
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // Update cookies with new tokens
+    // Update cookies with new tokens - use config values for expiration
+    const accessTokenExpirMs =
+      this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') ||
+      15 * 60 * 1000;
+    const refreshTokenExpirMs =
+      this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
+      7 * 24 * 60 * 60 * 1000;
+
     res.cookie('access_token', result.access_token, {
       httpOnly: false,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: accessTokenExpirMs,
     });
 
     res.cookie('refresh_token', result.refresh_token, {
       httpOnly: false,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: refreshTokenExpirMs,
     });
 
-    // Send in headers too
+    // Send in headers for easy access
     res.setHeader('X-Access-Token', result.access_token);
     res.setHeader('X-Refresh-Token', result.refresh_token);
 
-    return result;
+    // Return tokens explicitly in response body for Swagger visibility
+    return {
+      access_token: result.access_token,
+      refresh_token: result.refresh_token,
+      user: result.user,
+      message: 'Tokens refreshed successfully',
+      success: true,
+    };
   }
 
   // ==================== Email Verification ====================
