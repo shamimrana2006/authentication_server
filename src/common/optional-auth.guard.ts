@@ -32,8 +32,8 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       request.headers['authorization']?.replace('Bearer ', '') ||
       request.cookies?.access_token;
 
-    console.log('tokens', accessToken);
-    console.log('tokens', refreshToken);
+    // console.log('access  ))))))))))))))))))', accessToken);
+    // console.log('refresh ((((((((((((((((((', refreshToken);
 
     let accessTokenValid = false;
     let refreshTokenValid = false;
@@ -44,66 +44,59 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       try {
         const decoded = this.jwtService.verify(accessToken);
         if (decoded && decoded.id) {
-          const isValid = await this.authService.validateRefreshToken(
-            decoded.id,
-            refreshToken,
-          );
           console.log('------------------------------------------------');
           console.log('accessValid');
 
-          accessTokenValid = isValid;
+          accessTokenValid = true;
         }
       } catch (err) {
-        // Access token is invalid or expired
-        refreshTokenValid = false;
+        accessTokenValid = false;
       }
     }
-    // Step 2: Check Refresh Token validity
     if (refreshToken) {
       try {
         const decoded = this.jwtService.verify(refreshToken);
         if (decoded && decoded.id) {
-          const isValid = await this.authService.validateRefreshToken(
-            decoded.id,
-            refreshToken,
-          );
           console.log('refreshvalid');
           console.log('------------------------------------------------');
-          refreshTokenValid = isValid;
+          refreshTokenValid = true;
         }
       } catch (err) {
-        // Refresh token is invalid or expired
+
         refreshTokenValid = false;
       }
     }
 
-    // Step 3: Handle different scenarios
-    // Scenario 1: Both tokens invalid → Logout (clear user)
-    // if (!accessTokenValid && !refreshTokenValid) {
-    //   request.user = null;
-    //   // Clear cookies to force logout
-    //   if (response.clearCookie) {
-    //     response.clearCookie('access_token');
-    //     response.clearCookie('refresh_token');
-    //   }
-    //   return true;
-    // }
+    if (!accessTokenValid && !refreshTokenValid) {
+      request.user = null;
+      // Clear cookies to force logout
+      if (response.clearCookie) {
+        response.clearCookie('access_token');
+        response.clearCookie('refresh_token');
+      }
+      return false;
+    }
 
     // Scenario 2: Access token invalid, Refresh token valid → Generate new access token only
     if (!accessTokenValid && refreshTokenValid) {
       try {
         const decodedRefreshToken = this.jwtService.decode(refreshToken);
         if (decodedRefreshToken && decodedRefreshToken.id) {
-          // Generate only new access token, keep refresh token as is
           const { exp, ...rest } = decodedRefreshToken as any;
 
+          const tokenPayload = {
+            id: rest.id,
+            email: rest.email,
+            name: rest.name,
+            role: rest.role,
+          };
           const newAccessToken =
-            await this.authService.generateAccessTokenOnly(rest);
+            await this.authService.generateAccessTokenOnly(tokenPayload);
           if (newAccessToken) {
-            request.user = decodedRefreshToken;
+            request.user = tokenPayload;
 
-            // response.locals = response.locals || {};
-            response.locals.newAccessToken = newAccessToken;
+            response.locals.activeAccessToken = newAccessToken;
+            response.locals.activeRefreshToken = refreshToken;
 
             const isProduction = process.env.NODE_ENV === 'production';
             const accessTokenExpirMs =
@@ -121,7 +114,6 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
               });
             }
 
-            request.locals.activeAccessToken = newAccessToken;
             return true;
           }
         }
@@ -132,17 +124,28 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
           err.message,
         );
         request.user = null;
-        return true;
-      }
+        return false;
+      } 
     }
 
     // Scenario 3: Access token valid, Refresh token invalid/expired → Regenerate only refresh token
+    console.log(accessTokenValid, 'first commemnt', accessToken);
+    console.log(refreshTokenValid, 'second commemnt', refreshToken);
+
     if (accessTokenValid && !refreshTokenValid) {
       try {
+        console.log('try comment');
         // Generate only new refresh token, keep the valid access token
-        const { exp, ...rest } = decodedAccessToken as any;
+        const decodedAccessToken = this.jwtService.decode(accessToken);
+        const tokenPayload = {
+          id: decodedAccessToken.id,
+          email: decodedAccessToken.email,
+          name: decodedAccessToken.name,
+          role: decodedAccessToken.role,
+        };
+        
         const newRefreshToken = await this.authService.generateRefreshTokenOnly(
-          rest,
+          tokenPayload,
           refreshToken, // Pass old refresh token for cleanup
         );
 
@@ -155,6 +158,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
         response.setHeader('X-New-Refresh-Token', newRefreshToken);
 
         // Attach to response locals so controllers can include it in response body
+        response.locals.activeAccessToken = accessToken;
         response.locals.activeRefreshToken = newRefreshToken;
 
         if (response.cookie) {
@@ -173,7 +177,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
           err.message,
         );
         // Failed to generate new refresh token, but access token is still valid
-        return true;
+        return false;
       }
     }
 
