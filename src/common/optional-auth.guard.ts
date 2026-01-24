@@ -38,9 +38,6 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       request.headers['authorization']?.replace('Bearer ', '') ||
       request.cookies?.access_token;
 
-    // console.log('access  ))))))))))))))))))', accessToken);
-    // console.log('refresh ((((((((((((((((((', refreshToken);
-
     let accessTokenValid = false;
     let refreshTokenValid = false;
     let decodedAccessToken = null;
@@ -96,17 +93,28 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
           };
           const newAccessToken =
             await this.authService.generateAccessTokenOnly(tokenPayload);
+
+          const newRefreshToken =
+            await this.authService.generateRefreshTokenOnly(
+              tokenPayload,
+              refreshToken,
+            );
+
           if (newAccessToken) {
             request.user = tokenPayload;
 
             response.locals.activeAccessToken = newAccessToken;
-            // response.locals.activeRefreshToken = refreshToken;
+            response.locals.activeRefreshToken = newRefreshToken;
 
             const isProduction = process.env.NODE_ENV === 'production';
             const accessTokenExpirMs =
-              this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') ||
+              this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') || 
               15 * 60 * 1000;
+            const refreshTokenExpirMs =
+              this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
+              7 * 24 * 60 * 60 * 1000;
 
+            response.setHeader('X-New-Refresh-Token', newRefreshToken);
             response.setHeader('X-New-Access-Token', newAccessToken);
 
             if (response.cookie) {
@@ -116,13 +124,18 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
                 sameSite: 'lax',
                 maxAge: accessTokenExpirMs,
               });
+              response.cookie('refresh_token', newRefreshToken, {
+                httpOnly: false,
+                secure: isProduction,
+                sameSite: 'lax',
+                maxAge: refreshTokenExpirMs,
+              });
             }
 
             return true;
           }
         }
       } catch (err) {
-        // Failed to regenerate access token, clear user
         console.error(
           'Scenario 2 - Access token regeneration failed:',
           err.message,
@@ -187,8 +200,6 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
 
     // Scenario 4: Both tokens valid → Everything is fine
     if (accessTokenValid && refreshTokenValid) {
-      // response.locals.activeRefreshToken = refreshToken;
-      // response.locals.activeAccessToken = accessToken;
       const decodedAccessToken = this.jwtService.decode(accessToken);
       request.user = {
         id: decodedAccessToken.id,

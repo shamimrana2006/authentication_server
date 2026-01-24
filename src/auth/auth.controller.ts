@@ -24,7 +24,6 @@ import { CheckUsernameDto } from './dto/check-username.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { OptionalJwtGuard } from '@/common/optional-auth.guard';
 import { ConfigService } from '@nestjs/config';
 import {
   ValidUser,
@@ -102,24 +101,21 @@ export class AuthController {
       accessToken: res.locals?.activeAccessToken,
       refreshToken: res.locals?.activeRefreshToken,
     };
-  }
+  } 
 
-  @Post('logout')
+  @Delete('logout')
   @ValidUser()
   @ApiBearerAuth('JWT-auth')
   @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Logout from current device (clears cookies)' })
   async logout(
-    @Body() body: RefreshTokenDto,
+    @Body() body: any,
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ) {
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
-    const result = await this.authService.logout(
-      req.user.id,
-      body.refreshToken,
-    );
+    const result = await this.authService.logout(req.user.id);
 
     // Clear cookies on logout
 
@@ -244,18 +240,12 @@ export class AuthController {
     return this.authService.updateUsername(req.user.id, dto);
   }
 
-  // @Post('forgot-username')
-  // @ApiOperation({ summary: 'Send username to email' })
-  // forgotUsername(@Body() body: { email: string }) {
-  //   return this.authService.forgotUsername(body.email);
-  // }
-
   // ==================== User Profile ====================
 
   @Put('profile')
   @ValidUser()
   @ApiBearerAuth('JWT-auth')
-   @ApiBearerAuth('refresh-token')
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Update user profile' })
   updateProfile(@Body() dto: UpdateProfileDto, @Req() req: any) {
     return this.authService.updateProfile(req.user.id, dto);
@@ -266,7 +256,7 @@ export class AuthController {
   @Get('sessions')
   @ValidUser()
   @ApiBearerAuth('JWT-auth')
-   @ApiBearerAuth('refresh-token')
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'View active sessions' })
   getSessions(@Req() req: any) {
     return this.authService.getSessions(req.user.id);
@@ -275,7 +265,7 @@ export class AuthController {
   @Delete('logout-all')
   @ValidAdmin()
   @ApiBearerAuth('JWT-auth')
-   @ApiBearerAuth('refresh-token')
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Logout from all devices (admin only)' })
   logoutAll(@Req() req: any) {
     return this.authService.logoutAll(req.user.id);

@@ -199,17 +199,6 @@ export class AuthService {
       Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) ||
       7;
 
-    // // Delete old session if refresh token provided
-    // if (oldRefreshToken) {
-    //   try {
-    //     await this.Prisma.client.session.deleteMany({
-    //       where: { refreshToken: oldRefreshToken },
-    //     });
-    //   } catch (err) {
-    //     // Session might already be deleted, that's fine
-    //   }
-    // }
-
     // Minimal token payload - only essential claims
     const tokenPayload = {
       id: user.id,
@@ -222,16 +211,6 @@ export class AuthService {
       expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'),
     } as any);
 
-    // Create new session with new refresh token
-    // await this.Prisma.client.session.create({
-    //   data: {
-    //     userId: user.id,
-    //     refreshToken,
-    //     expiresAt: new Date(
-    //       Date.now() + refreshTokenExpiration * 24 * 60 * 60 * 1000,
-    //     ),
-    //   },
-    // });
 
     return refreshToken;
   }
@@ -267,17 +246,19 @@ export class AuthService {
     return true;
   }
 
-  async logout(userId: string, refreshToken: string) {
+  async logout(userId: string) {
+    console.log(userId);
+    
     await this.Prisma.client.session.deleteMany({
       where: {
         userId,
-        refreshToken,
       },
     });
 
     return {
       success: true,
       message: 'Logged out successfully',
+      userId
     };
   }
 
