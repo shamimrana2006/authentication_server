@@ -26,7 +26,11 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { OptionalJwtGuard } from '@/common/optional-auth.guard';
 import { ConfigService } from '@nestjs/config';
-import { access } from 'node:fs';
+import {
+  ValidUser,
+  ValidAdmin,
+  ValidAll,
+} from '@/common/decorators/validate.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -82,71 +86,42 @@ export class AuthController {
   }
 
   @Get('me')
-  @UseGuards(OptionalJwtGuard)
+  @ValidUser()
   @ApiBearerAuth('JWT-auth')
   @ApiBearerAuth('refresh-token')
   @ApiOperation({
     summary: 'Get current user profile (supports auto token refresh)',
   })
   async getMe(@Req() req: any, @Res({ passthrough: true }) res: any) {
-    // if (!req.user) {
-    //   return {
-    //     success: false,
-    //     message: 'Not authenticated - both tokens invalid',
-    //     user: null,
-    //   };
-    // }
-    // const user = await this.authService.getMe(req.user.id);
-
-    // // Check if new tokens were issued (from headers or locals)
-    // const newAccessToken =
-    //   res.getHeader('X-New-Access-Token') || res.locals?.newAccessToken;
-    // const newRefreshToken =
-    //   res.getHeader('X-New-Refresh-Token') || res.locals?.newRefreshToken;
-
-    // const response: any = {
-    //   success: true,
-    //   user,
-    //   tokensRefreshed: !!(newAccessToken || newRefreshToken),
-    // };
-
-    // // Include regenerated tokens in response if available
-    // if (newAccessToken) {
-    //   response.newAccessToken = newAccessToken;
-    // }
-    // if (newRefreshToken) {
-    //   response.newRefreshToken = newRefreshToken;
-    // }
-
-    // return response;
-
-   
-
+    const result = await this.authService.getMe(req.user.id);
+    req.user = result;
     return {
       success: true,
-      message: 'just call it',
+      message: 'successfully fetched user profile',
+      user: req.user,
       accessToken: res.locals?.activeAccessToken,
       refreshToken: res.locals?.activeRefreshToken,
-    }
+    };
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard('jwt'))
+  @ValidUser()
   @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Logout from current device (clears cookies)' })
   async logout(
     @Body() body: RefreshTokenDto,
     @Req() req: any,
     @Res({ passthrough: true }) res: any,
   ) {
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
     const result = await this.authService.logout(
       req.user.id,
       body.refreshToken,
     );
 
     // Clear cookies on logout
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
 
     return result;
   }
@@ -241,8 +216,9 @@ export class AuthController {
   }
 
   @Put('change-password')
-  @UseGuards(AuthGuard('jwt'))
+  @ValidUser()
   @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Change password when logged in' })
   changePassword(@Body() dto: ChangePasswordDto, @Req() req: any) {
     return this.authService.changePassword(req.user.id, dto);
@@ -251,7 +227,7 @@ export class AuthController {
   // ==================== Username Management ====================
 
   @Post('check-username')
-  @UseGuards(OptionalJwtGuard)
+  @ValidAll()
   @ApiBearerAuth('JWT-auth')
   @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Check if username is available (optional auth)' })
@@ -260,8 +236,9 @@ export class AuthController {
   }
 
   @Put('update-username')
-  @UseGuards(AuthGuard('jwt'))
+  @ValidUser()
   @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Update username' })
   updateUsername(@Body() dto: UpdateUsernameDto, @Req() req: any) {
     return this.authService.updateUsername(req.user.id, dto);
@@ -276,8 +253,9 @@ export class AuthController {
   // ==================== User Profile ====================
 
   @Put('profile')
-  @UseGuards(AuthGuard('jwt'))
+  @ValidUser()
   @ApiBearerAuth('JWT-auth')
+   @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Update user profile' })
   updateProfile(@Body() dto: UpdateProfileDto, @Req() req: any) {
     return this.authService.updateProfile(req.user.id, dto);
@@ -286,17 +264,19 @@ export class AuthController {
   // ==================== Security ====================
 
   @Get('sessions')
-  @UseGuards(AuthGuard('jwt'))
+  @ValidUser()
   @ApiBearerAuth('JWT-auth')
+   @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'View active sessions' })
   getSessions(@Req() req: any) {
     return this.authService.getSessions(req.user.id);
   }
 
   @Delete('logout-all')
-  @UseGuards(AuthGuard('jwt'))
+  @ValidAdmin()
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Logout from all devices' })
+   @ApiBearerAuth('refresh-token')
+  @ApiOperation({ summary: 'Logout from all devices (admin only)' })
   logoutAll(@Req() req: any) {
     return this.authService.logoutAll(req.user.id);
   }
