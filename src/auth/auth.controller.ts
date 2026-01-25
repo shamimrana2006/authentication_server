@@ -14,6 +14,7 @@ import { registerDto } from './dto/register.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { loginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -84,6 +85,52 @@ export class AuthController {
     return result;
   }
 
+  @Post('google-login')
+  @ApiOperation({
+    summary: 'Google Login/Register - Send Firebase ID Token',
+    description:
+      'Login or register using Google. Frontend sends Firebase ID Token. Automatically creates user if not exists.',
+  })
+  async googleLogin(
+    @Body() dto: GoogleAuthDto,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    try {
+      const result = await this.authService.verifyGoogleToken(dto.token);
+
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      // Set cookies
+      res.cookie('access_token', result.access_token, {
+        httpOnly: false,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS'),
+      });
+
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: false,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS'),
+      });
+
+      // Also send tokens in response headers
+      res.setHeader('X-Access-Token', result.access_token);
+      res.setHeader('X-Refresh-Token', result.refresh_token);
+
+      return {
+        success: true,
+        message: result.message || 'Google authentication successful',
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+        user: result.user,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   @Get('me')
   @ValidUser()
   @ApiBearerAuth('JWT-auth')
@@ -101,7 +148,7 @@ export class AuthController {
       accessToken: res.locals?.activeAccessToken,
       refreshToken: res.locals?.activeRefreshToken,
     };
-  } 
+  }
 
   @Delete('logout')
   @ValidUser()
@@ -249,6 +296,92 @@ export class AuthController {
   @ApiOperation({ summary: 'Update user profile' })
   updateProfile(@Body() dto: UpdateProfileDto, @Req() req: any) {
     return this.authService.updateProfile(req.user.id, dto);
+  }
+
+  // ==================== Discord OAuth ====================
+
+  @Get('discord-auth-url')
+  @ApiOperation({
+    summary: 'Get Discord OAuth Authorization URL',
+    description:
+      'Returns the Discord OAuth URL for manual redirect from frontend. Useful for testing and custom implementations.',
+  })
+  getDiscordAuthUrl() {
+    const clientId = this.configService.get<string>('DISCORD_CLIENT_ID');
+    const redirectUri =
+      this.configService.get<string>('DISCORD_CALLBACK_URL') ||
+      'http://localhost:6545/auth/discord/callback';
+    const scope = 'identify email';
+
+    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
+
+    return {
+      success: true,
+      message: 'Discord OAuth URL generated successfully',
+      url: discordAuthUrl,
+      instructions: [
+        '1. Copy the URL',
+        '2. Open in browser or redirect from frontend using: window.location.href = url',
+        '3. User logs in and authorizes',
+        '4. Browser redirects to callback URL with authorization code',
+        '5. Backend exchanges code for tokens and redirects to frontend',
+      ],
+    };
+  }
+
+  @Get('discord')
+  @UseGuards(AuthGuard('discord'))
+  @ApiOperation({
+    summary: 'Initiate Discord OAuth login',
+    description:
+      'Redirects user to Discord for authentication (Passport handles redirect)',
+  })
+  async discordLogin() {
+    // Guard redirects to Discord
+  }
+
+  @Get('discord/callback')
+  @UseGuards(AuthGuard('discord'))
+  @ApiOperation({
+    summary: 'Discord OAuth callback',
+    description: 'Discord redirects back here after user authenticates',
+  })
+  async discordCallback(@Req() req: any, @Res() res: any) {
+    try {
+      const discordUser = req.user;
+
+      const result = await this.authService.discordAuthCallback(discordUser);
+
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      // Set cookies
+      res.cookie('access_token', result.access_token, {
+        httpOnly: false,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS'),
+      });
+
+      res.cookie('refresh_token', result.refresh_token, {
+        httpOnly: false,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS'),
+      });
+
+      // Redirect to frontend with tokens in query params or return HTML with JS to set tokens
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') ||
+        'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}?access_token=${result.access_token}&refresh_token=${result.refresh_token}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
+
+      return res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Discord callback error:', error);
+      return res.redirect(
+        `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}?error=discord_auth_failed`,
+      );
+    }
   }
 
   // ==================== Security ====================

@@ -7,6 +7,7 @@ import {
 import { registerDto } from './dto/register.dto';
 import { UserService } from '../user/user.service';
 import { compareHash, hashText } from '@/common/hashText';
+import { generateStrongPassword } from '@/common/password-generator';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { loginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +22,7 @@ import { CheckUsernameDto } from './dto/check-username.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ConfigService } from '@nestjs/config';
+import { FirebaseGoogleService } from './services/firebase-google.service';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +32,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private configService: ConfigService,
+    private firebaseGoogleService: FirebaseGoogleService,
   ) {}
 
   async validateUser(emailOrUsername: string, password: string): Promise<any> {
@@ -211,7 +214,6 @@ export class AuthService {
       expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'),
     } as any);
 
-
     return refreshToken;
   }
 
@@ -248,7 +250,7 @@ export class AuthService {
 
   async logout(userId: string) {
     console.log(userId);
-    
+
     await this.Prisma.client.session.deleteMany({
       where: {
         userId,
@@ -258,7 +260,7 @@ export class AuthService {
     return {
       success: true,
       message: 'Logged out successfully',
-      userId
+      userId,
     };
   }
 
@@ -687,5 +689,228 @@ export class AuthService {
     });
 
     return sessions;
+  }
+
+  // ==================== Google OAuth ====================
+
+  async verifyGoogleToken(token: string) {
+    try {
+      const googleUserData =
+        await this.firebaseGoogleService.verifyGoogleToken(token);
+      return await this.googleAuthCallback(googleUserData);
+    } catch (error) {
+      console.error('❌ Google token verification error:', error);
+      throw new UnauthorizedException('Google authentication failed');
+    }
+  }
+
+  async googleAuthCallback(googleUserData: any) {
+    try {
+      // Check if user exists with Google ID or email
+      let user = await this.Prisma.client.user.findFirst({
+        where: {
+          OR: [
+            { googleId: googleUserData.uid },
+            { email: googleUserData.email },
+          ],
+        },
+      });
+
+      const isNewUser = !user;
+      let generatedPassword: string | null = null;
+
+      // If user doesn't exist, create new user
+      if (!user) {
+        // Generate strong password
+        generatedPassword = generateStrongPassword();
+        const passwordHash = await hashText(generatedPassword);
+
+        const username = await this.generateUniqueUsername(
+          googleUserData.name || 'user',
+        );
+
+        user = await this.Prisma.client.user.create({
+          data: {
+            id: this.generateUserId(),
+            email: googleUserData.email,
+            name: googleUserData.name || 'Google User',
+            avatar:
+              googleUserData.picture ||
+              'https://i.pinimg.com/236x/1a/a8/d7/1aa8d75f3498784bcd2617b3e3d1e0c4.jpg',
+            googleId: googleUserData.uid,
+            emailVerified: googleUserData.emailVerified || true,
+            username,
+            password: passwordHash, // Store hashed password
+          },
+        });
+
+        console.log('✅ New user created via Google:', user.email);
+
+        // Send password email to new user
+        try {
+          await this.emailService.sendGoogleAuthPassword(
+            user.email,
+            generatedPassword,
+            user.username || 'User',
+            user.name || 'User',
+          );
+          console.log('✅ Password email sent to:', user.email);
+        } catch (emailError) {
+          console.error('⚠️ Failed to send password email:', emailError);
+          // Don't throw - user was created successfully, email failure is not critical
+        }
+      } else if (!user.googleId) {
+        // Link Google ID to existing user
+        user = await this.Prisma.client.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: googleUserData.uid,
+            emailVerified: true,
+          },
+        });
+
+        console.log('✅ Google ID linked to existing user:', user.email);
+      }
+
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+
+      // Generate tokens
+      const tokens = await this.generateTokens(userWithoutPassword);
+
+      return {
+        success: true,
+        message: isNewUser
+          ? 'Account created successfully. Check your email for password details.'
+          : user.googleId === googleUserData.uid
+            ? 'Login successful'
+            : 'Account linked successfully',
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        user: userWithoutPassword,
+      };
+    } catch (error) {
+      console.error('❌ Google auth callback error:', error);
+      throw error;
+    }
+  }
+
+  private async generateUniqueUsername(baseName: string): Promise<string> {
+    let username = baseName.trim().toLowerCase().replace(/\s+/g, '');
+    let isUnique = false;
+    let attempt = 0;
+
+    while (!isUnique && attempt < 10) {
+      const exists = await this.Prisma.client.user.findUnique({
+        where: { username },
+      });
+
+      if (!exists) {
+        isUnique = true;
+      } else {
+        username = `${baseName.toLowerCase().replace(/\s+/g, '')}${Math.floor(Math.random() * 10000)}`;
+        attempt++;
+      }
+    }
+
+    return username;
+  }
+
+  // ==================== Discord OAuth ====================
+
+  async discordAuthCallback(discordUserData: any) {
+    try {
+      // Check if user exists with Discord ID or email
+      let user = await this.Prisma.client.user.findFirst({
+        where: {
+          OR: [
+            { discord: discordUserData.discordId },
+            { email: discordUserData.email },
+          ],
+        },
+      });
+
+      const isNewUser = !user;
+      let generatedPassword: string | null = null;
+
+      // If user doesn't exist, create new user
+      if (!user) {
+        // Generate strong password
+        generatedPassword = generateStrongPassword();
+        const passwordHash = await hashText(generatedPassword);
+
+        const username = await this.generateUniqueUsername(
+          discordUserData.username || 'user',
+        );
+
+        user = await this.Prisma.client.user.create({
+          data: {
+            id: this.generateUserId(),
+            email: discordUserData.email,
+            name:
+              discordUserData.name ||
+              discordUserData.username ||
+              'Discord User',
+            avatar: discordUserData.avatar,
+            discord: discordUserData.discordId,
+            emailVerified: true, // Discord verifies emails
+            username,
+            password: passwordHash, // Store hashed password
+          },
+        });
+
+        console.log('✅ New user created via Discord:', user.email);
+
+        // Send password email to new user
+        try {
+          await this.emailService.sendGoogleAuthPassword(
+            user.email,
+            generatedPassword,
+            user.username || 'User',
+            user.name || 'User',
+          );
+          console.log('✅ Password email sent to:', user.email);
+        } catch (emailError) {
+          console.error('⚠️ Failed to send password email:', emailError);
+          // Don't throw - user was created successfully, email failure is not critical
+        }
+      } else if (!user.discord) {
+        // Link Discord ID to existing user
+        user = await this.Prisma.client.user.update({
+          where: { id: user.id },
+          data: {
+            discord: discordUserData.discordId,
+            emailVerified: true,
+          },
+        });
+
+        console.log('✅ Discord ID linked to existing user:', user.email);
+      }
+
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+
+      // Generate tokens
+      const tokens = await this.generateTokens(userWithoutPassword);
+
+      return {
+        success: true,
+        message: isNewUser
+          ? 'Account created successfully. Check your email for password details.'
+          : user.discord === discordUserData.discordId
+            ? 'Login successful'
+            : 'Account linked successfully',
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        user: userWithoutPassword,
+      };
+    } catch (error) {
+      console.error('❌ Discord auth callback error:', error);
+      throw error;
+    }
+  }
+
+  private generateUserId(): string {
+    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

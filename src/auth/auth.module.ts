@@ -6,8 +6,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStrategy } from '@/lib/strategy/local.strategy';
 import { JwtStrategy } from '@/lib/strategy/jwt';
+import { DiscordStrategy } from '@/lib/strategy/discord.strategy';
 import { EmailModule } from '../email/email.module';
 import { PassportModule } from '@nestjs/passport';
+import { FirebaseGoogleService } from './services/firebase-google.service';
 
 @Module({
   imports: [
@@ -24,7 +26,13 @@ import { PassportModule } from '@nestjs/passport';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    DiscordStrategy,
+    FirebaseGoogleService,
+  ],
+  exports: [AuthService, JwtModule, FirebaseGoogleService],
 })
 export class AuthModule {}

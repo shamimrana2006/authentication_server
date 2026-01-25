@@ -68,4 +68,44 @@ export class EmailService {
       `,
     });
   }
+
+  async sendGoogleAuthPassword(
+    email: string,
+    password: string,
+    username: string,
+    name: string,
+  ) {
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Welcome! Your Account Password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4CAF50;">Welcome to Our Platform!</h2>
+          <p>Hi ${name},</p>
+          
+          <p>Your account has been created successfully via Google Sign-In.</p>
+          
+          <p>Here are your login credentials for future reference:</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 10px 0;"><strong>Username:</strong> ${username}</p>
+            <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+            <p style="margin: 10px 0;"><strong>Password:</strong> <code style="background-color: #e0e0e0; padding: 5px 10px; border-radius: 4px;">${password}</code></p>
+          </div>
+          
+          <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            <p style="margin: 0; color: #856404;"><strong>⚠️ Security Notice:</strong></p>
+            <p style="margin: 10px 0; color: #856404;">Please keep this password secure. We recommend changing it on your first login.</p>
+            <p style="margin: 0; color: #856404;">You can also continue using Google Sign-In for future logins.</p>
+          </div>
+          
+          <p style="margin-top: 20px;">If you have any questions or didn't create this account, please contact us immediately.</p>
+          
+          <p style="color: #666; font-size: 12px; margin-top: 30px;">
+            This is an automated message. Please do not reply to this email.
+          </p>
+        </div>
+      `,
+    });
+  }
 }
