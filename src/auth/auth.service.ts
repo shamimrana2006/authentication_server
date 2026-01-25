@@ -160,7 +160,6 @@ export class AuthService {
     const refreshTokenExpiration =
       Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) ||
       7;
-    // const refreshTokenExpirationDays = Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) || 7;
 
     // Minimal token payload - only essential claims
     const tokenPayload = {

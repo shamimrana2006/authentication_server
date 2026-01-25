@@ -311,7 +311,7 @@ export class AuthController {
     const redirectUri =
       this.configService.get<string>('DISCORD_CALLBACK_URL') ||
       'http://localhost:6545/auth/discord/callback';
-    const scope = 'identify email';
+    const scope = 'identify email'; 
 
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
 
@@ -372,7 +372,7 @@ export class AuthController {
       // Redirect to frontend with tokens in query params or return HTML with JS to set tokens
       const frontendUrl =
         this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:3000';
+        'http://localhost:3000'; // 
       const redirectUrl = `${frontendUrl}?access_token=${result.access_token}&refresh_token=${result.refresh_token}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
 
       return res.redirect(redirectUrl);
