@@ -40,6 +40,8 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  //Grobal token expiration settings
+
   // ==================== Registration & Login ====================
 
   @Post('register')
@@ -62,20 +64,34 @@ export class AuthController {
     const result = await this.authService.login(body, req.user);
 
     const isProduction = process.env.NODE_ENV === 'production';
+    const accessTokenConfigMs = Number(
+      this.configService.get('ACCESS_TOKEN_EXPIRATION_MS'),
+    );
+    const refreshTokenConfigMs = Number(
+      this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+    );
+    const accessTokenExpirMs = Math.floor(
+      isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
+    );
+    const refreshTokenExpirMs = Math.floor(
+      isNaN(refreshTokenConfigMs)
+        ? 7 * 24 * 60 * 60 * 1000
+        : refreshTokenConfigMs,
+    );
 
     // Set cookies for automatic token management
     res.cookie('access_token', result.access_token, {
       httpOnly: false, // Allow JavaScript access in dev for Swagger
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS'), // 15 seconds
+      maxAge: accessTokenExpirMs, // 15 seconds
     });
 
     res.cookie('refresh_token', result.refresh_token, {
       httpOnly: false, // Allow JavaScript access in dev for Swagger
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS'), // 20 seconds
+      maxAge: refreshTokenExpirMs, // 20 seconds
     });
 
     // Also send tokens in response headers for easy copy-paste in Swagger
@@ -99,20 +115,34 @@ export class AuthController {
       const result = await this.authService.verifyGoogleToken(dto.token);
 
       const isProduction = process.env.NODE_ENV === 'production';
+      const accessTokenConfigMs = Number(
+        this.configService.get('ACCESS_TOKEN_EXPIRATION_MS'),
+      );
+      const refreshTokenConfigMs = Number(
+        this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+      );
+      const accessTokenExpirMs = Math.floor(
+        isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
+      );
+      const refreshTokenExpirMs = Math.floor(
+        isNaN(refreshTokenConfigMs)
+          ? 7 * 24 * 60 * 60 * 1000
+          : refreshTokenConfigMs,
+      );
 
       // Set cookies
       res.cookie('access_token', result.access_token, {
         httpOnly: false,
         secure: isProduction,
         sameSite: 'lax',
-        maxAge: this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS'),
+        maxAge: accessTokenExpirMs,
       });
 
       res.cookie('refresh_token', result.refresh_token, {
         httpOnly: false,
         secure: isProduction,
         sameSite: 'lax',
-        maxAge: this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS'),
+        maxAge: refreshTokenExpirMs,
       });
 
       // Also send tokens in response headers
@@ -122,9 +152,9 @@ export class AuthController {
       return {
         success: true,
         message: result.message || 'Google authentication successful',
-        access_token: result.access_token,
-        refresh_token: result.refresh_token,
-        user: result.user,
+        access_token: result?.access_token,
+        refresh_token: result?.refresh_token,
+        user: result?.user,
       };
     } catch (error) {
       throw error;
@@ -169,54 +199,54 @@ export class AuthController {
     return result;
   }
 
-  @Post('refresh-token')
-  @ApiOperation({
-    summary:
-      'Refresh access token using refresh token (returns new tokens + sets cookies)',
-  })
-  async refreshToken(
-    @Body() body: RefreshTokenDto,
-    @Res({ passthrough: true }) res: any,
-  ) {
-    const result = await this.authService.refreshToken(body.refreshToken);
+  // @Post('refresh-token')
+  // @ApiOperation({
+  //   summary:
+  //     'Refresh access token using refresh token (returns new tokens + sets cookies)',
+  // })
+  // async refreshToken(
+  //   @Body() body: RefreshTokenDto,
+  //   @Res({ passthrough: true }) res: any,
+  // ) {
+  //   const result = await this.authService.refreshToken(body.refreshToken);
 
-    const isProduction = process.env.NODE_ENV === 'production';
+  //   const isProduction = process.env.NODE_ENV === 'production';
 
-    // Update cookies with new tokens - use config values for expiration
-    const accessTokenExpirMs =
-      this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') ||
-      15 * 60 * 1000;
-    const refreshTokenExpirMs =
-      this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
-      7 * 24 * 60 * 60 * 1000;
+  //   // Update cookies with new tokens - use config values for expiration
+  //   const accessTokenExpirMs =
+  //     this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') ||
+  //     15 * 60 * 1000;
+  //   const refreshTokenExpirMs =
+  //     this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
+  //     7 * 24 * 60 * 60 * 1000;
 
-    res.cookie('access_token', result.access_token, {
-      httpOnly: false,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: accessTokenExpirMs,
-    });
+  //   res.cookie('access_token', result.access_token, {
+  //     httpOnly: false,
+  //     secure: isProduction,
+  //     sameSite: 'lax',
+  //     maxAge: accessTokenExpirMs,
+  //   });
 
-    res.cookie('refresh_token', result.refresh_token, {
-      httpOnly: false,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: refreshTokenExpirMs,
-    });
+  //   res.cookie('refresh_token', result.refresh_token, {
+  //     httpOnly: false,
+  //     secure: isProduction,
+  //     sameSite: 'lax',
+  //     maxAge: refreshTokenExpirMs,
+  //   });
 
-    // Send in headers for easy access
-    res.setHeader('X-Access-Token', result.access_token);
-    res.setHeader('X-Refresh-Token', result.refresh_token);
+  //   // Send in headers for easy access
+  //   res.setHeader('X-Access-Token', result.access_token);
+  //   res.setHeader('X-Refresh-Token', result.refresh_token);
 
-    // Return tokens explicitly in response body for Swagger visibility
-    return {
-      access_token: result.access_token,
-      refresh_token: result.refresh_token,
-      user: result.user,
-      message: 'Tokens refreshed successfully',
-      success: true,
-    };
-  }
+  //   // Return tokens explicitly in response body for Swagger visibility
+  //   return {
+  //     access_token: result?.access_token,
+  //     refresh_token: result?.refresh_token,
+  //     user: result?.user,
+  //     message: 'Tokens refreshed successfully',
+  //     success: true,
+  //   };
+  // }
 
   // ==================== Email Verification ====================
 
@@ -252,11 +282,11 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
-  @Post('resend-reset-otp')
-  @ApiOperation({ summary: 'Resend password reset OTP' })
-  resendResetOtp(@Body() dto: ResendOtpDto) {
-    return this.authService.resendResetOtp(dto);
-  }
+  // @Post('resend-reset-otp')
+  // @ApiOperation({ summary: 'Resend password reset OTP' })
+  // resendResetOtp(@Body() dto: ResendOtpDto) {
+  //   return this.authService.resendResetOtp(dto);
+  // }
 
   @Put('change-password')
   @ValidUser()
@@ -311,7 +341,7 @@ export class AuthController {
     const redirectUri =
       this.configService.get<string>('DISCORD_CALLBACK_URL') ||
       'http://localhost:6545/auth/discord/callback';
-    const scope = 'identify email'; 
+    const scope = 'identify email';
 
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}`;
 
@@ -353,26 +383,40 @@ export class AuthController {
       const result = await this.authService.discordAuthCallback(discordUser);
 
       const isProduction = process.env.NODE_ENV === 'production';
+      const accessTokenConfigMs = Number(
+        this.configService.get('ACCESS_TOKEN_EXPIRATION_MS'),
+      );
+      const refreshTokenConfigMs = Number(
+        this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+      );
+      const accessTokenExpirMs = Math.floor(
+        isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
+      );
+      const refreshTokenExpirMs = Math.floor(
+        isNaN(refreshTokenConfigMs)
+          ? 7 * 24 * 60 * 60 * 1000
+          : refreshTokenConfigMs,
+      );
 
       // Set cookies
       res.cookie('access_token', result.access_token, {
         httpOnly: false,
         secure: isProduction,
         sameSite: 'lax',
-        maxAge: this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS'),
+        maxAge: accessTokenExpirMs,
       });
 
       res.cookie('refresh_token', result.refresh_token, {
         httpOnly: false,
         secure: isProduction,
         sameSite: 'lax',
-        maxAge: this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS'),
+        maxAge: refreshTokenExpirMs,
       });
 
       // Redirect to frontend with tokens in query params or return HTML with JS to set tokens
       const frontendUrl =
         this.configService.get<string>('FRONTEND_URL') ||
-        'http://localhost:3000'; // 
+        'http://localhost:3000'; //
       const redirectUrl = `${frontendUrl}?access_token=${result.access_token}&refresh_token=${result.refresh_token}&user=${encodeURIComponent(JSON.stringify(result.user))}`;
 
       return res.redirect(redirectUrl);

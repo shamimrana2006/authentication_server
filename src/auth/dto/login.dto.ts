@@ -16,9 +16,5 @@ export class loginDto {
     description: 'Password for the user account',
   })
   @IsNotEmpty({ message: 'Password is required.' })
-  // @Matches(/^(?=.*[A-Za-z])(?=.*\d).{6,}$/, {
-  //   message:
-  //     'Password must be at least 6 characters long and contain at least one letter and one number.',
-  // })
   password: string;
 }

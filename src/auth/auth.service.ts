@@ -47,12 +47,10 @@ export class AuthService {
     }
 
     const isPasswordValid = await compareHash(password, user.password);
-
     if (isPasswordValid) {
       const { password, ...result } = user;
       return result;
     }
-
     throw new Error('Invalid credentials');
   }
 
@@ -74,27 +72,24 @@ export class AuthService {
 
     // create a unique username if not provided and if provided check uniqueness
 
-    let username = createAuthDto.name.trim().toLowerCase().replace(/\s+/g, '');
+    let username = createAuthDto.username
+      ? createAuthDto.username.trim().toLowerCase().replace(/\s+/g, '')
+      : createAuthDto.name.trim().toLowerCase().replace(/\s+/g, '');
     let isUnique = false;
 
     while (!isUnique) {
       const exists = await this.Prisma.client.user.findUnique({
         where: { username },
       });
-      console.log(username);
 
       if (!exists) {
         isUnique = true;
       } else {
-        // example: johndoe65454
-
         username = `${username}${Math.floor(Math.random() * 100000)}`;
       }
     }
 
     const passwordHash = await hashText(createAuthDto.password);
-
-    console.log(createAuthDto.password, passwordHash);
 
     // Generate OTP for email verification
     const otp = this.generateOtp();
@@ -108,13 +103,17 @@ export class AuthService {
       emailVerificationExpiry: otpExpiry,
     };
 
-    // Send verification email
-    await this.emailService.sendVerificationOtp(
-      createAuthDto.email,
-      otp,
-      createAuthDto.name || 'User',
+    // Send verification email if required
+    const verificationRequired = this.configService.get<string>(
+      'EMAIL_VERIFICATION_REQUIRED',
     );
-
+    if (verificationRequired === 'true') {
+      await this.emailService.sendVerificationOtp(
+        createAuthDto.email,
+        otp,
+        createAuthDto.name || 'User',
+      );
+    }
     const user = await this.Prisma.client.user.create({
       data: payload,
     });
@@ -156,9 +155,12 @@ export class AuthService {
 
   async generateTokens(user: any) {
     const accessTokenExpiration =
-      Number(this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_M')) || 15; // 15 minutes
+    //convert day from milliseconds
+      Number(this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS'))/86400000 ||
+      15; // 15 minutes
     const refreshTokenExpiration =
-      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) ||
+    //convert days from milliseconds
+      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'))/86400000 ||
       7;
 
     // Minimal token payload - only essential claims
@@ -170,25 +172,14 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(tokenPayload, {
-      // expiresIn: `${accessTokenExpiration}m`,
-      expiresIn: this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS'),
+      expiresIn: `${accessTokenExpiration}d`,
+      // expiresIn: this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS'),
     } as any);
 
     const refreshToken = this.jwtService.sign(tokenPayload, {
-      // expiresIn: `${refreshTokenExpiration}d`,
-      expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'),
+      expiresIn: `${refreshTokenExpiration}d`,
+      // expiresIn: this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'),
     } as any);
-
-    // Store refresh token in session
-    // await t6e({
-    //   data: {
-    //     userId: user.id,
-    //     refreshToken,
-    //     expiresAt: new Date(
-    //       Date.now() + refreshTokenExpiration * 24 * 60 * 60 * 1000,
-    //     ),
-    //   },
-    // });
 
     return {
       access_token: accessToken,
@@ -198,7 +189,7 @@ export class AuthService {
 
   async generateRefreshTokenOnly(user: any, oldRefreshToken?: string) {
     const refreshTokenExpiration =
-      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_DD')) ||
+      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'))/86400000 ||
       7;
 
     // Minimal token payload - only essential claims
@@ -248,7 +239,7 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-    console.log(userId);
+
 
     await this.Prisma.client.session.deleteMany({
       where: {
@@ -393,7 +384,7 @@ export class AuthService {
       // Don't reveal if user exists
       return {
         success: true,
-        message: 'If the email exists, a reset code has been sent',
+        message: 'user not found',
       };
     }
 
@@ -743,7 +734,7 @@ export class AuthService {
           },
         });
 
-        console.log('✅ New user created via Google:', user.email);
+       
 
         // Send password email to new user
         try {
@@ -753,7 +744,7 @@ export class AuthService {
             user.username || 'User',
             user.name || 'User',
           );
-          console.log('✅ Password email sent to:', user.email);
+          
         } catch (emailError) {
           console.error('⚠️ Failed to send password email:', emailError);
           // Don't throw - user was created successfully, email failure is not critical
@@ -768,7 +759,7 @@ export class AuthService {
           },
         });
 
-        console.log('✅ Google ID linked to existing user:', user.email);
+      
       }
 
       // Remove password from response
@@ -858,7 +849,7 @@ export class AuthService {
           },
         });
 
-        console.log('✅ New user created via Discord:', user.email);
+       
 
         // Send password email to new user
         try {
@@ -868,7 +859,7 @@ export class AuthService {
             user.username || 'User',
             user.name || 'User',
           );
-          console.log('✅ Password email sent to:', user.email);
+        
         } catch (emailError) {
           console.error('⚠️ Failed to send password email:', emailError);
           // Don't throw - user was created successfully, email failure is not critical
@@ -883,7 +874,7 @@ export class AuthService {
           },
         });
 
-        console.log('✅ Discord ID linked to existing user:', user.email);
+    
       }
 
       // Remove password from response

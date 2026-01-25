@@ -577,7 +577,7 @@
       // Initialize Firebase
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
-      console.log('✅ Firebase initialized successfully');
+     
 
       // Backend API URL
       let BACKEND_URL =
@@ -696,7 +696,7 @@
           showStatus('✅ Successfully authenticated with backend!', 'success');
           displayUserInfo(data);
 
-          console.log('Backend Response:', data);
+          
           return data;
         } catch (error) {
           console.error('Backend Error:', error);
@@ -764,7 +764,6 @@
               '✅ Discord URL loaded! Click "Redirect করুন" or copy & paste URL',
               'success',
             );
-            console.log('✅ Discord Auth URL fetched:', data.url);
           } else {
             throw new Error('Failed to get Discord URL');
           }

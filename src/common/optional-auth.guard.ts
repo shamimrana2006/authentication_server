@@ -47,8 +47,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       try {
         const decoded = this.jwtService.verify(accessToken);
         if (decoded && decoded.id) {
-          console.log('------------------------------------------------');
-          console.log('accessValid');
+         
 
           accessTokenValid = true;
         }
@@ -60,11 +59,10 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       try {
         const decoded = this.jwtService.verify(refreshToken);
         if (decoded && decoded.id) {
-          console.log('refreshvalid');
-          console.log('------------------------------------------------');
+
           refreshTokenValid = true;
         }
-      } catch (err) {
+      } catch (err) { 
         refreshTokenValid = false;
       }
     }
@@ -107,12 +105,20 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
             response.locals.activeRefreshToken = newRefreshToken;
 
             const isProduction = process.env.NODE_ENV === 'production';
-            const accessTokenExpirMs =
-              this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') || 
-              15 * 60 * 1000;
-            const refreshTokenExpirMs =
-              this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
-              7 * 24 * 60 * 60 * 1000;
+            const accessTokenConfigMs = Number(
+              this.configService.get('ACCESS_TOKEN_EXPIRATION_MS'),
+            );
+            const accessTokenExpirMs = Math.floor(
+              isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
+            );
+            const refreshTokenConfigMs = Number(
+              this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+            );
+            const refreshTokenExpirMs = Math.floor(
+              isNaN(refreshTokenConfigMs)
+                ? 7 * 24 * 60 * 60 * 1000
+                : refreshTokenConfigMs,
+            );
 
             response.setHeader('X-New-Refresh-Token', newRefreshToken);
             response.setHeader('X-New-Access-Token', newAccessToken);
@@ -146,8 +152,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
     }
 
     // Scenario 3: Access token valid, Refresh token invalid/expired → Regenerate only refresh token
-    console.log(accessTokenValid, 'first commemnt', accessToken);
-    console.log(refreshTokenValid, 'second commemnt', refreshToken);
+   
 
     if (accessTokenValid && !refreshTokenValid) {
       try {
@@ -167,9 +172,14 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
 
         // Attach only the new refresh token (keep access token as is)
         const isProduction = process.env.NODE_ENV === 'production';
-        const refreshTokenExpirMs =
-          this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
-          7 * 24 * 60 * 60 * 1000;
+        const refreshTokenConfigMs = Number(
+          this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+        );
+        const refreshTokenExpirMs = Math.floor(
+          isNaN(refreshTokenConfigMs)
+            ? 7 * 24 * 60 * 60 * 1000
+            : refreshTokenConfigMs,
+        );
 
         response.setHeader('X-New-Refresh-Token', newRefreshToken);
 

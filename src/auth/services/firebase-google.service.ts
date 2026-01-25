@@ -37,7 +37,6 @@ export class FirebaseGoogleService {
         },
         'google-auth',
       );
-      console.log('✅ Firebase initialized for Google Auth');
     } catch (error: any) {
       if (!error.message.includes('already exists')) {
         throw error;
