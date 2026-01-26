@@ -135,6 +135,24 @@
         background: #f8f9fa;
       }
 
+      .btn-facebook {
+        background: #1877f2;
+        color: #fff;
+      }
+
+      .btn-facebook:hover {
+        background: #145bd1;
+      }
+
+      .btn-github {
+        background: #24292e;
+        color: #fff;
+      }
+
+      .btn-github:hover {
+        background: #1b1f23;
+      }
+
       .btn-apple {
         background: #000;
         color: #fff;
@@ -382,7 +400,7 @@
     <div class="container">
       <div class="header">
         <h1>🔥 Firebase Auth Test</h1>
-        <p>Test Google & Apple Sign-In with Backend</p>
+        <p>Test Google, Apple, Facebook & GitHub Sign-In with Backend</p>
       </div>
 
       <div id="statusMessage" class="status"></div>
@@ -424,6 +442,24 @@
             />
           </svg>
           Sign in with Google
+        </button>
+
+        <button id="facebookSignInBtn" class="btn btn-facebook">
+          <svg class="icon" viewBox="0 0 24 24" fill="white">
+            <path
+              d="M22.675 0h-21.35C.595 0 0 .595 0 1.326v21.348C0 23.405.595 24 1.326 24h11.495v-9.294H9.691v-3.622h3.13V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12V24h6.116C23.405 24 24 23.405 24 22.674V1.326C24 .595 23.405 0 22.675 0z"
+            />
+          </svg>
+          Sign in with Facebook
+        </button>
+
+        <button id="githubSignInBtn" class="btn btn-github">
+          <svg class="icon" viewBox="0 0 24 24" fill="white">
+            <path
+              d="M12 .5C5.73.5.82 5.41.82 11.69c0 4.9 3.18 9.06 7.59 10.53.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.93-3.09.67-3.74-1.49-3.74-1.49-.51-1.29-1.24-1.64-1.24-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.69-1.79 1.88-2.31 0 0 .81-.37 1.97-.37 1.16 0 1.97.37 1.97.37 1.19.52.88 2.41 1.88 2.31 0 0 .6-1.08 1.73-1.16 0 0 1.1-.01.08.69 0 0-.73.35-1.24 1.64 0 0-.64 2.16-3.74 1.49-.01.95-.02 1.66-.02 1.93 0 .3.2.65.78.54 4.4-1.47 7.58-5.63 7.58-10.53C23.18 5.41 18.27.5 12 .5z"
+            />
+          </svg>
+          Sign in with GitHub
         </button>
 
         <button id="discordSignInBtn" class="btn btn-discord">
@@ -559,6 +595,8 @@
         getAuth,
         signInWithPopup,
         GoogleAuthProvider,
+        FacebookAuthProvider,
+        GithubAuthProvider,
         OAuthProvider,
         signOut,
       } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
@@ -577,7 +615,6 @@
       // Initialize Firebase
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
-     
 
       // Backend API URL
       let BACKEND_URL =
@@ -587,6 +624,8 @@
 
       // DOM Elements
       const googleSignInBtn = document.getElementById('googleSignInBtn');
+      const facebookSignInBtn = document.getElementById('facebookSignInBtn');
+      const githubSignInBtn = document.getElementById('githubSignInBtn');
       const discordSignInBtn = document.getElementById('discordSignInBtn');
       const appleSignInBtn = document.getElementById('appleSignInBtn');
       const logoutBtn = document.getElementById('logoutBtn');
@@ -696,7 +735,6 @@
           showStatus('✅ Successfully authenticated with backend!', 'success');
           displayUserInfo(data);
 
-          
           return data;
         } catch (error) {
           console.error('Backend Error:', error);
@@ -739,6 +777,73 @@
                     </svg>
                     Sign in with Google
                 `;
+        }
+      });
+
+      // Facebook Sign-In
+      facebookSignInBtn.addEventListener('click', async () => {
+        try {
+          facebookSignInBtn.disabled = true;
+          facebookSignInBtn.innerHTML =
+            '<div class="loading"></div> Signing in...';
+          showStatus('Opening Facebook Sign-In...', 'info');
+
+          const provider = new FacebookAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+
+          showStatus('Getting Firebase token...', 'info');
+          const idToken = await result.user.getIdToken();
+
+          console.log('Firebase User:', result.user);
+          console.log('ID Token:', idToken);
+          showIdToken(idToken);
+          copyIdTokenBtn.onclick = () => copyTextFrom(idTokenTextarea);
+          sendBackendBtn.onclick = () =>
+            sendTokenToBackend(idToken, 'facebook');
+          clearTokenBtn.onclick = () => showIdToken('');
+        } catch (error) {
+          console.error('Facebook Sign-In Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          facebookSignInBtn.disabled = false;
+          facebookSignInBtn.innerHTML = `
+                  <svg class="icon" viewBox="0 0 24 24" fill="white">
+                    <path d="M22.675 0h-21.35C.595 0 0 .595 0 1.326v21.348C0 23.405.595 24 1.326 24h11.495v-9.294H9.691v-3.622h3.13V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12V24h6.116C23.405 24 24 23.405 24 22.674V1.326C24 .595 23.405 0 22.675 0z"/>
+                  </svg>
+                  Sign in with Facebook
+              `;
+        }
+      });
+
+      // GitHub Sign-In
+      githubSignInBtn.addEventListener('click', async () => {
+        try {
+          githubSignInBtn.disabled = true;
+          githubSignInBtn.innerHTML =
+            '<div class="loading"></div> Signing in...';
+          showStatus('Opening GitHub Sign-In...', 'info');
+
+          const provider = new GithubAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+
+          showStatus('Getting Firebase token...', 'info');
+          const idToken = await result.user.getIdToken();
+
+          console.log('Firebase User:', result.user);
+          console.log('ID Token:', idToken);
+          showIdToken(idToken);
+          copyIdTokenBtn.onclick = () => copyTextFrom(idTokenTextarea);
+          sendBackendBtn.onclick = () => sendTokenToBackend(idToken, 'github');
+          clearTokenBtn.onclick = () => showIdToken('');
+        } catch (error) {
+          console.error('GitHub Sign-In Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          githubSignInBtn.disabled = false;
+          githubSignInBtn.innerHTML = `
+                  <svg class="icon" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 .5C5.73.5.82 5.41.82 11.69c0 4.9 3.18 9.06 7.59 10.53.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.93-3.09.67-3.74-1.49-3.74-1.49-.51-1.29-1.24-1.64-1.24-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.69-1.79 1.88-2.31 0 0 .81-.37 1.97-.37 1.16 0 1.97.37 1.97.37 1.19.52.88 2.41 1.88 2.31 0 0 .6-1.08 1.73-1.16 0 0 1.1-.01.08.69 0 0-.73.35-1.24 1.64 0 0-.64 2.16-3.74 1.49-.01.95-.02 1.66-.02 1.93 0 .3.2.65.78.54 4.4-1.47 7.58-5.63 7.58-10.53C23.18 5.41 18.27.5 12 .5z"/>
+                  </svg>
+                  Sign in with GitHub
+              `;
         }
       });
 
@@ -912,6 +1017,8 @@
 
           googleSignInBtn.disabled = false;
           appleSignInBtn.disabled = false;
+          facebookSignInBtn.disabled = false;
+          githubSignInBtn.disabled = false;
           googleSignInBtn.innerHTML = `
                     <svg class="icon" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -926,6 +1033,18 @@
                         <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                     </svg>
                     Sign in with Apple
+                `;
+          facebookSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24" fill="white">
+                      <path d="M22.675 0h-21.35C.595 0 0 .595 0 1.326v21.348C0 23.405.595 24 1.326 24h11.495v-9.294H9.691v-3.622h3.13V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12V24h6.116C23.405 24 24 23.405 24 22.674V1.326C24 .595 23.405 0 22.675 0z"/>
+                    </svg>
+                    Sign in with Facebook
+                `;
+          githubSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24" fill="white">
+                      <path d="M12 .5C5.73.5.82 5.41.82 11.69c0 4.9 3.18 9.06 7.59 10.53.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.93-3.09.67-3.74-1.49-3.74-1.49-.51-1.29-1.24-1.64-1.24-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.69-1.79 1.88-2.31 0 0 .81-.37 1.97-.37 1.16 0 1.97.37 1.97.37 1.19.52.88 2.41 1.88 2.31 0 0 .6-1.08 1.73-1.16 0 0 1.1-.01.08.69 0 0-.73.35-1.24 1.64 0 0-.64 2.16-3.74 1.49-.01.95-.02 1.66-.02 1.93 0 .3.2.65.78.54 4.4-1.47 7.58-5.63 7.58-10.53C23.18 5.41 18.27.5 12 .5z"/>
+                    </svg>
+                    Sign in with GitHub
                 `;
         } catch (error) {
           console.error('Logout Error:', error);
