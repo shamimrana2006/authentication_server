@@ -683,12 +683,16 @@ export class AuthService {
 
   async verifyFirebaseToken(token: string) {
     try {
+      if (!token) {
+        throw new UnauthorizedException('Firebase token is required');
+      }
       const firebaseUserData =
         await this.firebaseAuthService.verifyFirebaseToken(token);
       return await this.firebaseAuthCallback(firebaseUserData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Firebase token verification error:', error);
-      throw new UnauthorizedException('Firebase authentication failed');
+      // Pass through the detailed error message from firebase-auth.service
+      throw error;
     }
   }
 

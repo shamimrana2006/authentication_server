@@ -66,6 +66,12 @@ export class FirebaseAuthService {
   }
 
   async verifyFirebaseToken(token: string) {
+    if (!token || typeof token !== 'string' || token.trim() === '') {
+      throw new UnauthorizedException(
+        'Firebase token is required and must be a non-empty string',
+      );
+    }
+
     if (!this.credentialsAvailable) {
       throw new UnauthorizedException(
         'Firebase is not configured. Please set FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL.',
@@ -91,9 +97,39 @@ export class FirebaseAuthService {
         emailVerified: decodedToken.email_verified,
         provider: decodedToken.firebase?.sign_in_provider || 'unknown',
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Token verification failed:', error);
-      throw new UnauthorizedException('Invalid or expired Firebase token');
+
+      // Provide detailed error messages based on error type
+      if (error.code === 'auth/argument-error') {
+        throw new UnauthorizedException(
+          'Invalid Firebase token format. Token must be a valid Firebase ID token.',
+        );
+      }
+      if (error.code === 'auth/invalid-id-token') {
+        throw new UnauthorizedException(
+          'Firebase token is invalid. Please provide a valid Firebase ID token.',
+        );
+      }
+      if (error.code === 'auth/id-token-expired') {
+        throw new UnauthorizedException(
+          'Firebase token has expired. Please sign in again to get a new token.',
+        );
+      }
+      if (error.message?.includes('decode')) {
+        throw new UnauthorizedException(
+          'Firebase token is malformed and cannot be decoded. Please check the token format.',
+        );
+      }
+      if (error.message?.includes('verify')) {
+        throw new UnauthorizedException(
+          'Firebase token verification failed. Token may be invalid, expired, or tampered with.',
+        );
+      }
+
+      throw new UnauthorizedException(
+        `Firebase authentication failed: ${error.message || 'Invalid or expired Firebase token'}`,
+      );
     }
   }
 }
