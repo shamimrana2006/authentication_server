@@ -17,18 +17,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  //create user
-  // @Post()
-  // @ApiOperation({ summary: 'Create a new user' })
-  // @ApiResponse({ status: 201, description: 'User successfully created' })
-  // @ApiResponse({ status: 409, description: 'User already exists' })
-  // create(@Body() createUserDto: CreateUserDto) {
-  //   console.log('userdata:========', createUserDto);
-
-  //   return this.userService.create(createUserDto);
-  // }
-
-  @Get()
+  @Get() 
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, description: 'Returns all users' })
   findAll() {

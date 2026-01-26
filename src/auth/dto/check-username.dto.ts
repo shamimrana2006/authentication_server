@@ -5,5 +5,6 @@ export class CheckUsernameDto {
   @ApiProperty({ example: 'johndoe' })
   @IsNotEmpty()
   @IsString()
-  username: string;
+  username: string; 
 }
+ 

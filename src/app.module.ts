@@ -18,7 +18,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     AuthModule,
     S3Module,
-  ],
+  ], 
   controllers: [AppController],
   providers: [AppService],
 })
