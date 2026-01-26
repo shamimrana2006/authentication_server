@@ -9,7 +9,7 @@ import { JwtStrategy } from '@/lib/strategy/jwt';
 import { DiscordStrategy } from '@/lib/strategy/discord.strategy';
 import { EmailModule } from '../email/email.module';
 import { PassportModule } from '@nestjs/passport';
-import { FirebaseGoogleService } from './services/firebase-google.service';
+import { FirebaseAuthService } from './services/firebase-auth.service';
 
 @Module({
   imports: [
@@ -31,8 +31,8 @@ import { FirebaseGoogleService } from './services/firebase-google.service';
     LocalStrategy,
     JwtStrategy,
     DiscordStrategy,
-    FirebaseGoogleService,
+    FirebaseAuthService,
   ],
-  exports: [AuthService, JwtModule, FirebaseGoogleService],
+  exports: [AuthService, JwtModule, FirebaseAuthService],
 })
 export class AuthModule {}

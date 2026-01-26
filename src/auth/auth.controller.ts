@@ -14,7 +14,7 @@ import { registerDto } from './dto/register.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { loginDto } from './dto/login.dto';
-import { GoogleAuthDto } from './dto/google-auth.dto';
+import { FirebaseAuthDto } from './dto/firebase-auth.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -101,18 +101,19 @@ export class AuthController {
     return result;
   }
 
-  @Post('google-login')
+  @Post('firebase-login')
   @ApiOperation({
-    summary: 'Google Login/Register - Send Firebase ID Token',
+    summary:
+      'Firebase Social Login/Register - Supports Google, Apple, Facebook, GitHub, etc.',
     description:
-      'Login or register using Google. Frontend sends Firebase ID Token. Automatically creates user if not exists.',
+      'Universal social login endpoint using Firebase Authentication. Send Firebase ID Token from any supported provider (Google, Apple, Facebook, GitHub, etc.). Automatically creates user account if not exists.',
   })
-  async googleLogin(
-    @Body() dto: GoogleAuthDto,
+  async firebaseLogin(
+    @Body() dto: FirebaseAuthDto,
     @Res({ passthrough: true }) res: any,
   ) {
     try {
-      const result = await this.authService.verifyGoogleToken(dto.token);
+      const result = await this.authService.verifyFirebaseToken(dto.token);
 
       const isProduction = process.env.NODE_ENV === 'production';
       const accessTokenConfigMs = Number(
@@ -151,7 +152,7 @@ export class AuthController {
 
       return {
         success: true,
-        message: result.message || 'Google authentication successful',
+        message: result.message || 'Social authentication successful',
         access_token: result?.access_token,
         refresh_token: result?.refresh_token,
         user: result?.user,

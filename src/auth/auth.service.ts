@@ -22,7 +22,7 @@ import { CheckUsernameDto } from './dto/check-username.dto';
 import { UpdateUsernameDto } from './dto/update-username.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ConfigService } from '@nestjs/config';
-import { FirebaseGoogleService } from './services/firebase-google.service';
+import { FirebaseAuthService } from './services/firebase-auth.service';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +32,7 @@ export class AuthService {
     private jwtService: JwtService,
     private emailService: EmailService,
     private configService: ConfigService,
-    private firebaseGoogleService: FirebaseGoogleService,
+    private firebaseAuthService: FirebaseAuthService,
   ) {}
 
   async validateUser(emailOrUsername: string, password: string): Promise<any> {
@@ -155,13 +155,13 @@ export class AuthService {
 
   async generateTokens(user: any) {
     const accessTokenExpiration =
-    //convert day from milliseconds
-      Number(this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS'))/86400000 ||
-      15; // 15 minutes
+      //convert day from milliseconds
+      Number(this.configService.get<string>('ACCESS_TOKEN_EXPIRATION_MS')) /
+        86400000 || 15; // 15 minutes
     const refreshTokenExpiration =
-    //convert days from milliseconds
-      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'))/86400000 ||
-      7;
+      //convert days from milliseconds
+      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS')) /
+        86400000 || 7;
 
     // Minimal token payload - only essential claims
     const tokenPayload = {
@@ -189,8 +189,8 @@ export class AuthService {
 
   async generateRefreshTokenOnly(user: any, oldRefreshToken?: string) {
     const refreshTokenExpiration =
-      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS'))/86400000 ||
-      7;
+      Number(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION_MS')) /
+        86400000 || 7;
 
     // Minimal token payload - only essential claims
     const tokenPayload = {
@@ -239,8 +239,6 @@ export class AuthService {
   }
 
   async logout(userId: string) {
-
-
     await this.Prisma.client.session.deleteMany({
       where: {
         userId,
@@ -681,27 +679,27 @@ export class AuthService {
     return sessions;
   }
 
-  // ==================== Google OAuth ====================
+  // ==================== Firebase OAuth (Google, Apple, Facebook, GitHub, etc.) ====================
 
-  async verifyGoogleToken(token: string) {
+  async verifyFirebaseToken(token: string) {
     try {
-      const googleUserData =
-        await this.firebaseGoogleService.verifyGoogleToken(token);
-      return await this.googleAuthCallback(googleUserData);
+      const firebaseUserData =
+        await this.firebaseAuthService.verifyFirebaseToken(token);
+      return await this.firebaseAuthCallback(firebaseUserData);
     } catch (error) {
-      console.error('❌ Google token verification error:', error);
-      throw new UnauthorizedException('Google authentication failed');
+      console.error('❌ Firebase token verification error:', error);
+      throw new UnauthorizedException('Firebase authentication failed');
     }
   }
 
-  async googleAuthCallback(googleUserData: any) {
+  async firebaseAuthCallback(firebaseUserData: any) {
     try {
       // Check if user exists with Google ID or email
       let user = await this.Prisma.client.user.findFirst({
         where: {
           OR: [
-            { googleId: googleUserData.uid },
-            { email: googleUserData.email },
+            { googleId: firebaseUserData.uid },
+            { email: firebaseUserData.email },
           ],
         },
       });
@@ -716,25 +714,23 @@ export class AuthService {
         const passwordHash = await hashText(generatedPassword);
 
         const username = await this.generateUniqueUsername(
-          googleUserData.name || 'user',
+          firebaseUserData.name || 'user',
         );
 
         user = await this.Prisma.client.user.create({
           data: {
             id: this.generateUserId(),
-            email: googleUserData.email,
-            name: googleUserData.name || 'Google User',
+            email: firebaseUserData.email,
+            name: firebaseUserData.name || 'User',
             avatar:
-              googleUserData.picture ||
+              firebaseUserData.picture ||
               'https://i.pinimg.com/236x/1a/a8/d7/1aa8d75f3498784bcd2617b3e3d1e0c4.jpg',
-            googleId: googleUserData.uid,
-            emailVerified: googleUserData.emailVerified || true,
+            googleId: firebaseUserData.uid,
+            emailVerified: firebaseUserData.emailVerified || true,
             username,
             password: passwordHash, // Store hashed password
           },
         });
-
-       
 
         // Send password email to new user
         try {
@@ -744,7 +740,6 @@ export class AuthService {
             user.username || 'User',
             user.name || 'User',
           );
-          
         } catch (emailError) {
           console.error('⚠️ Failed to send password email:', emailError);
           // Don't throw - user was created successfully, email failure is not critical
@@ -754,12 +749,10 @@ export class AuthService {
         user = await this.Prisma.client.user.update({
           where: { id: user.id },
           data: {
-            googleId: googleUserData.uid,
+            googleId: firebaseUserData.uid,
             emailVerified: true,
           },
         });
-
-      
       }
 
       // Remove password from response
@@ -772,7 +765,7 @@ export class AuthService {
         success: true,
         message: isNewUser
           ? 'Account created successfully. Check your email for password details.'
-          : user.googleId === googleUserData.uid
+          : user.googleId === firebaseUserData.uid
             ? 'Login successful'
             : 'Account linked successfully',
         access_token: tokens.access_token,
@@ -780,7 +773,7 @@ export class AuthService {
         user: userWithoutPassword,
       };
     } catch (error) {
-      console.error('❌ Google auth callback error:', error);
+      console.error('❌ Firebase auth callback error:', error);
       throw error;
     }
   }
@@ -849,8 +842,6 @@ export class AuthService {
           },
         });
 
-       
-
         // Send password email to new user
         try {
           await this.emailService.sendGoogleAuthPassword(
@@ -859,7 +850,6 @@ export class AuthService {
             user.username || 'User',
             user.name || 'User',
           );
-        
         } catch (emailError) {
           console.error('⚠️ Failed to send password email:', emailError);
           // Don't throw - user was created successfully, email failure is not critical
@@ -873,8 +863,6 @@ export class AuthService {
             emailVerified: true,
           },
         });
-
-    
       }
 
       // Remove password from response

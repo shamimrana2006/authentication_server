@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class FirebaseGoogleService {
+export class FirebaseAuthService {
   private firebaseApp: admin.app.App;
 
   constructor(private configService: ConfigService) {
@@ -35,18 +35,18 @@ export class FirebaseGoogleService {
             clientEmail,
           } as any),
         },
-        'google-auth',
+        'firebase-auth',
       );
     } catch (error: any) {
       if (!error.message.includes('already exists')) {
         throw error;
       }
       // Use existing app if already initialized
-      this.firebaseApp = admin.app('google-auth');
+      this.firebaseApp = admin.app('firebase-auth');
     }
   }
 
-  async verifyGoogleToken(token: string) {
+  async verifyFirebaseToken(token: string) {
     try {
       const decodedToken = await admin
         .auth(this.firebaseApp)
@@ -58,10 +58,11 @@ export class FirebaseGoogleService {
         name: decodedToken.name,
         picture: decodedToken.picture,
         emailVerified: decodedToken.email_verified,
+        provider: decodedToken.firebase?.sign_in_provider || 'unknown',
       };
     } catch (error) {
       console.error('❌ Token verification failed:', error);
-      throw new UnauthorizedException('Invalid or expired Google token');
+      throw new UnauthorizedException('Invalid or expired Firebase token');
     }
   }
 }
