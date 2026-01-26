@@ -10,7 +10,7 @@ export class loginDto {
   @IsNotEmpty({ message: 'Email or Username is required.' })
   @IsString({ message: 'Email or Username must be a string.' })
   emailOrUsername: string;
-
+  
   @ApiProperty({
     example: 'strongPassword123',
     description: 'Password for the user account',

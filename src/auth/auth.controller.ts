@@ -125,7 +125,7 @@ export class AuthController {
       const accessTokenExpirMs = Math.floor(
         isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
       );
-      const refreshTokenExpirMs = Math.floor(
+      const refreshTokenExpirMs = Math.floor( 
         isNaN(refreshTokenConfigMs)
           ? 7 * 24 * 60 * 60 * 1000
           : refreshTokenConfigMs,

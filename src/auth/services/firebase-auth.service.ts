@@ -4,13 +4,32 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class FirebaseAuthService {
-  private firebaseApp: admin.app.App;
+  private firebaseApp: admin.app.App | null = null;
+  private initializationAttempted = false;
+  private credentialsAvailable = false;
 
   constructor(private configService: ConfigService) {
-    this.initializeFirebase();
+    // Check credentials availability without initializing
+    this.checkCredentialsAvailable();
+  }
+
+  private checkCredentialsAvailable(): boolean {
+    const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
+    const privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY');
+    const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
+
+    this.credentialsAvailable = !!projectId && !!privateKey && !!clientEmail;
+    return this.credentialsAvailable;
   }
 
   private initializeFirebase() {
+    // Lazy initialization - only when needed
+    if (this.initializationAttempted) {
+      return;
+    }
+
+    this.initializationAttempted = true;
+
     const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
     const privateKey = this.configService
       .get<string>('FIREBASE_PRIVATE_KEY')
@@ -19,10 +38,10 @@ export class FirebaseAuthService {
 
     if (!projectId || !privateKey || !clientEmail) {
       console.error(
-        '❌ Firebase credentials are missing in environment variables',
+        '❌ Firebase credentials are missing in environment variables. Firebase auth is disabled.',
       );
-      throw new Error(
-        'Firebase credentials are missing in environment variables',
+      throw new UnauthorizedException(
+        'Firebase credentials are not configured. Please set FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL in environment variables.',
       );
     }
 
@@ -47,7 +66,19 @@ export class FirebaseAuthService {
   }
 
   async verifyFirebaseToken(token: string) {
+    if (!this.credentialsAvailable) {
+      throw new UnauthorizedException(
+        'Firebase is not configured. Please set FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL.',
+      );
+    }
+
+    this.initializeFirebase();
+
     try {
+      if (!this.firebaseApp) {
+        throw new Error('Firebase app failed to initialize');
+      }
+
       const decodedToken = await admin
         .auth(this.firebaseApp)
         .verifyIdToken(token);
