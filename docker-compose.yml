@@ -25,7 +25,7 @@ services:
     networks:
       - app-network
 
-  ${SERVER_SERVICE_NAME}:
+  server:
     image: ${IMMAGE_NAME}
     container_name: ${SERVER_NAME}
     restart: unless-stopped
