@@ -26,8 +26,8 @@ services:
       - app-network
 
   server:
-    image: shamimrana2006/server:latest
-    container_name: server
+    image: ${IMMAGE_NAME}
+    container_name: ${SERVER_NAME}
     restart: unless-stopped
     profiles:
       - prod
@@ -46,8 +46,8 @@ services:
       - app-network
 
   # frontend:
-  #   image: shamimrana2006/frontend:latest
-  #   container_name: frontend
+  #   image: ${IMMAGE_NAME}
+  #   container_name: ${SERVER_NAME}_frontend
   #   restart: unless-stopped
   #   profiles:
   #     - prod
@@ -60,8 +60,8 @@ services:
   #     - app-network
 
   prisma-studio:
-    image: shamimrana2006/server:latest
-    container_name: prisma_studio
+    image: ${IMMAGE_NAME}
+    container_name: ${SERVER_NAME}_prisma_studio
     restart: unless-stopped
     profiles:
       - prod
