@@ -46,7 +46,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: shamimrana2006/server:latest
+          tags: ${{ secrets.IMMAGE_NAME }}
   deploy:
         name: Deploy
         runs-on: ubuntu-latest
