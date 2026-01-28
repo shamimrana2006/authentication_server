@@ -25,7 +25,7 @@ services:
     networks:
       - app-network
 
-  server:
+  ${SERVER_SERVICE_NAME}:
     image: ${IMMAGE_NAME}
     container_name: ${SERVER_NAME}
     restart: unless-stopped
@@ -38,7 +38,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NODE_ENV: production
     ports:
-      - '5090:6545'
+      - '${SERVER_PORT}:${PORT}'
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     ports:
-      - '7896:5555'
+      - '${PRISMA_STUDIO_PORT}:5555'
     command: npx prisma studio --port 5555 --browser none
     depends_on:
       postgres:
