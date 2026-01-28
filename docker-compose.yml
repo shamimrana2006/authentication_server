@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: auth_postgress
+    container_name: ${SERVER_NAME}_postgres
     restart: unless-stopped
     profiles:
       - prod
