@@ -45,19 +45,19 @@ services:
     networks:
       - app-network
 
-  frontend:
-    image: shamimrana2006/frontend:latest
-    container_name: frontend
-    restart: unless-stopped
-    profiles:
-      - prod
-      - frontend
-    env_file:
-      - .env.local
-    ports:
-      - '5080:8545'
-    networks:
-      - app-network
+  # frontend:
+  #   image: shamimrana2006/frontend:latest
+  #   container_name: frontend
+  #   restart: unless-stopped
+  #   profiles:
+  #     - prod
+  #     - frontend
+  #   env_file:
+  #     - .env.local
+  #   ports:
+  #     - '5080:8545'
+  #   networks:
+  #     - app-network
 
   prisma-studio:
     image: shamimrana2006/server:latest
@@ -65,7 +65,6 @@ services:
     restart: unless-stopped
     profiles:
       - prod
-      - dev
       - server
     env_file:
       - .env
@@ -97,8 +96,8 @@ services:
     depends_on:
       server:
         condition: service_started
-      frontend:
-        condition: service_started
+      # frontend:
+      #   condition: service_started
     networks:
       - app-network
 
