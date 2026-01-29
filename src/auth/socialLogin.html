@@ -601,8 +601,12 @@
         signOut,
       } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-      // Firebase configuration
-      const firebaseConfig = {
+      // Firebase configuration (fetched from backend env; falls back to default values)
+      let firebaseConfig;
+      let app;
+      let auth;
+
+      const defaultFirebaseConfig = {
         apiKey: 'AIzaSyCwlKwAvJJ_e0nLLX84Xqn9h5bQtARsycM',
         authDomain: 'jconnect-b6f89.firebaseapp.com',
         projectId: 'jconnect-b6f89',
@@ -612,9 +616,33 @@
         measurementId: 'G-81J9NQ13DG',
       };
 
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
+      async function loadFirebaseConfig() {
+        if (firebaseConfig) return firebaseConfig;
+
+        try {
+          const response = await fetch('/auth/firebase-config');
+          const data = await response.json();
+          if (!response.ok || !data?.config?.apiKey) {
+            throw new Error(data?.message || 'Config missing');
+          }
+          firebaseConfig = data.config;
+          showStatus('✅ Firebase config loaded from server', 'success');
+        } catch (error) {
+          console.warn('Firebase config fetch failed, using fallback:', error);
+          firebaseConfig = defaultFirebaseConfig;
+          showStatus('⚠️ Using fallback Firebase config', 'info');
+        }
+        return firebaseConfig;
+      }
+
+      async function ensureFirebaseReady() {
+        if (app && auth) return { app, auth };
+
+        const config = await loadFirebaseConfig();
+        app = initializeApp(config);
+        auth = getAuth(app);
+        return { app, auth };
+      }
 
       // Backend API URL
       let BACKEND_URL =
@@ -746,6 +774,7 @@
       // Google Sign-In
       googleSignInBtn.addEventListener('click', async () => {
         try {
+          await ensureFirebaseReady();
           googleSignInBtn.disabled = true;
           googleSignInBtn.innerHTML =
             '<div class="loading"></div> Signing in...';
@@ -783,6 +812,7 @@
       // Facebook Sign-In
       facebookSignInBtn.addEventListener('click', async () => {
         try {
+          await ensureFirebaseReady();
           facebookSignInBtn.disabled = true;
           facebookSignInBtn.innerHTML =
             '<div class="loading"></div> Signing in...';
@@ -817,6 +847,7 @@
       // GitHub Sign-In
       githubSignInBtn.addEventListener('click', async () => {
         try {
+          await ensureFirebaseReady();
           githubSignInBtn.disabled = true;
           githubSignInBtn.innerHTML =
             '<div class="loading"></div> Signing in...';
@@ -970,6 +1001,7 @@
       // Apple Sign-In
       appleSignInBtn.addEventListener('click', async () => {
         try {
+          await ensureFirebaseReady();
           appleSignInBtn.disabled = true;
           appleSignInBtn.innerHTML =
             '<div class="loading"></div> Signing in...';
@@ -1053,7 +1085,10 @@
       });
 
       // Initial status
-      showStatus('✅ Firebase ready! Click a button to sign in.', 'info');
+      ensureFirebaseReady().catch((error) => {
+        console.error('Firebase init error:', error);
+        showStatus(`❌ Firebase config missing: ${error.message}`, 'error');
+      });
       console.log('Backend URL:', BACKEND_URL);
 
       // Handle OAuth callback from Discord

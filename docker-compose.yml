@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: auth_postgress
+    container_name: ${SERVER_NAME}_postgres
     restart: unless-stopped
     profiles:
       - prod
@@ -26,8 +26,8 @@ services:
       - app-network
 
   server:
-    image: shamimrana2006/server:latest
-    container_name: server
+    image: ${IMMAGE_NAME}
+    container_name: ${SERVER_NAME}
     restart: unless-stopped
     profiles:
       - prod
@@ -38,42 +38,41 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NODE_ENV: production
     ports:
-      - '5090:6545'
+      - '${SERVER_PORT}:${PORT}'
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - app-network
 
-  frontend:
-    image: shamimrana2006/frontend:latest
-    container_name: frontend
-    restart: unless-stopped
-    profiles:
-      - prod
-      - frontend
-    env_file:
-      - .env.local
-    ports:
-      - '5080:8545'
-    networks:
-      - app-network
+  # frontend:
+  #   image: ${IMMAGE_NAME}
+  #   container_name: ${SERVER_NAME}_frontend
+  #   restart: unless-stopped
+  #   profiles:
+  #     - prod
+  #     - frontend
+  #   env_file:
+  #     - .env.local
+  #   ports:
+  #     - '5080:8545'
+  #   networks:
+  #     - app-network
 
   prisma-studio:
-    image: shamimrana2006/server:latest
-    container_name: prisma_studio
+    image: ${IMMAGE_NAME}
+    container_name: ${SERVER_NAME}_prisma_studio
     restart: unless-stopped
     profiles:
       - prod
-      - dev
       - server
     env_file:
       - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     ports:
-      - '7896:5555'
-    command: npx prisma studio --port 5555 --browser none
+      - '${PRISMA_STUDIO_PORT_LOCAL}:${PRISMA_STUDIO_PORT}'
+    command: npx prisma studio --port ${PRISMA_STUDIO_PORT} --browser none
     depends_on:
       postgres:
         condition: service_healthy
@@ -89,6 +88,8 @@ services:
       - caddy
     ports:
       - '80:80'
+      - '8000:8000'
+      - '8001:8001'
       - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
@@ -97,8 +98,8 @@ services:
     depends_on:
       server:
         condition: service_started
-      frontend:
-        condition: service_started
+      # frontend:
+      #   condition: service_started
     networks:
       - app-network
 
