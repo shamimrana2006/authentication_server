@@ -81,6 +81,8 @@ services:
 
   caddy:
     image: caddy:latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     container_name: caddy
     restart: unless-stopped
     profiles:
