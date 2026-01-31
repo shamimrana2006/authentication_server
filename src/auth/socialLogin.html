@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Authentication Test - JConnect</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 100%;
+        padding: 40px;
+        animation: slideIn 0.5s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        color: #333;
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .btn-discord {
+        background: #5865f2;
+        color: #fff;
+      }
+
+      .btn-discord:hover {
+        background: #4752c4;
+      }
+
+      .status {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: none;
+      }
+
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .status.info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+
+      .auth-section {
+        margin-bottom: 30px;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 15px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn-google {
+        background: #fff;
+        color: #333;
+        border: 2px solid #ddd;
+      }
+
+      .btn-google:hover {
+        border-color: #4285f4;
+        background: #f8f9fa;
+      }
+
+      .btn-facebook {
+        background: #1877f2;
+        color: #fff;
+      }
+
+      .btn-facebook:hover {
+        background: #145bd1;
+      }
+
+      .btn-github {
+        background: #24292e;
+        color: #fff;
+      }
+
+      .btn-github:hover {
+        background: #1b1f23;
+      }
+
+      .btn-apple {
+        background: #000;
+        color: #fff;
+      }
+
+      .btn-apple:hover {
+        background: #333;
+      }
+
+      .btn-logout {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-logout:hover {
+        background: #c82333;
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .user-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none;
+      }
+
+      .user-info.show {
+        display: block;
+      }
+
+      .user-info h3 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 18px;
+      }
+
+      .info-item {
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+
+      .info-item strong {
+        color: #666;
+        display: inline-block;
+        width: 100px;
+      }
+
+      .info-item span {
+        color: #333;
+      }
+
+      .divider {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+      }
+
+      .divider::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background: #ddd;
+      }
+
+      .divider span {
+        background: white;
+        padding: 0 15px;
+        position: relative;
+        color: #999;
+        font-size: 14px;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .icon {
+        width: 20px;
+        height: 20px;
+      }
+
+      .settings-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .settings-section h3 {
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 15px;
+      }
+
+      .input-group {
+        margin-bottom: 15px;
+      }
+
+      .input-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn-save {
+        background: #667eea;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .btn-save:hover {
+        background: #5568d3;
+      }
+
+      .response-data {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .response-data pre {
+        font-size: 12px;
+        color: #333;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      /* Token section */
+      .token-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        display: none;
+      }
+      .token-section.show {
+        display: block;
+      }
+      .token-section h3 {
+        color: #333;
+        margin-bottom: 12px;
+        font-size: 16px;
+      }
+      .token-box {
+        position: relative;
+        margin-top: 8px;
+      }
+      .token-textarea {
+        width: 100%;
+        min-height: 110px;
+        padding: 12px 44px 12px 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 12px;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          'Liberation Mono', 'Courier New', monospace;
+        background: #fff;
+        color: #222;
+        resize: vertical;
+      }
+      .copy-btn {
+        position: absolute;
+        right: 8px;
+        top: 8px;
+        padding: 8px 10px;
+        border: none;
+        border-radius: 6px;
+        background: #667eea;
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .copy-btn:hover {
+        background: #5568d3;
+      }
+      .actions-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .btn-secondary {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        background: #e9ecef;
+        color: #333;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-secondary:hover {
+        background: #dee2e6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔥 Firebase Auth Test</h1>
+        <p>Test Google, Apple, Facebook & GitHub Sign-In with Backend</p>
+      </div>
+
+      <div id="statusMessage" class="status"></div>
+
+      <!-- Settings Section -->
+      <div class="settings-section">
+        <h3>⚙️ Backend Configuration</h3>
+        <div class="input-group">
+          <label for="backendUrl">Backend Endpoint URL:</label>
+          <input
+            type="text"
+            id="backendUrl"
+            placeholder="http://localhost:5050/auth/firebase-login"
+            value="http://localhost:5050/auth/firebase-login"
+          />
+        </div>
+        <button class="btn-save" id="saveBtn">💾 Save Configuration</button>
+      </div>
+
+      <!-- Login Buttons -->
+      <div id="loginSection" class="auth-section">
+        <button id="googleSignInBtn" class="btn btn-google">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            />
+          </svg>
+          Sign in with Google
+        </button>
+
+        <button id="facebookSignInBtn" class="btn btn-facebook">
+          <svg class="icon" viewBox="0 0 24 24" fill="white">
+            <path
+              d="M22.675 0h-21.35C.595 0 0 .595 0 1.326v21.348C0 23.405.595 24 1.326 24h11.495v-9.294H9.691v-3.622h3.13V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12V24h6.116C23.405 24 24 23.405 24 22.674V1.326C24 .595 23.405 0 22.675 0z"
+            />
+          </svg>
+          Sign in with Facebook
+        </button>
+
+        <button id="githubSignInBtn" class="btn btn-github">
+          <svg class="icon" viewBox="0 0 24 24" fill="white">
+            <path
+              d="M12 .5C5.73.5.82 5.41.82 11.69c0 4.9 3.18 9.06 7.59 10.53.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.93-3.09.67-3.74-1.49-3.74-1.49-.51-1.29-1.24-1.64-1.24-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.69-1.79 1.88-2.31 0 0 .81-.37 1.97-.37 1.16 0 1.97.37 1.97.37 1.19.52.88 2.41 1.88 2.31 0 0 .6-1.08 1.73-1.16 0 0 1.1-.01.08.69 0 0-.73.35-1.24 1.64 0 0-.64 2.16-3.74 1.49-.01.95-.02 1.66-.02 1.93 0 .3.2.65.78.54 4.4-1.47 7.58-5.63 7.58-10.53C23.18 5.41 18.27.5 12 .5z"
+            />
+          </svg>
+          Sign in with GitHub
+        </button>
+
+        <button id="discordSignInBtn" class="btn btn-discord">
+          <svg class="icon" viewBox="0 0 24 24" fill="white">
+            <path
+              d="M20.317 4.3698a19.7913 19.7913 0 00-4.885-1.515a.07.07 0 00-.07.0328c-.211.3744-.444.8623-.607 1.25.5601.1055 1.1117.2237 1.6565.3652a.0698.0698 0 01.0611.0353c.3068.517.6049 1.0822.8881 1.6624a.0757.0757 0 01-.0386.0957c-1.2358.5789-2.5872 1.0289-3.9577 1.291a.077.077 0 00-.0387.0376c-.2171.4206-.4514.8417-.7044 1.2588a.073.073 0 00.0087.0917c2.9482 2.2092 6.647 3.5623 10.6445 3.5623.3618 0 .7188-.0117 1.0742-.0354a.073.073 0 00.0703-.0582c.273-.883.481-1.779.612-2.475.063-.360.117-.7144.166-1.0742a.076.076 0 00-.0378-.0818A19.7496 19.7496 0 0020.317 4.3698zM8.02 15.3312c-.7475 0-1.3633-.6765-1.3633-1.506s.6158-1.506 1.3633-1.506c.7346 0 1.3634.6765 1.3634 1.506.0039.8295-.6288 1.506-1.3634 1.506zm5.645 0c-.7475 0-1.3633-.6765-1.3633-1.506s.6158-1.506 1.3633-1.506c.7346 0 1.3634.6765 1.3634 1.506 0 .8295-.6288 1.506-1.3634 1.506z"
+            />
+          </svg>
+          Discord দিয়ে লগইন করুন
+        </button>
+
+        <div
+          id="discordUrlSection"
+          style="
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            border: 2px solid #5865f2;
+          "
+        >
+          <h4 style="margin-top: 0; color: #333">📋 Discord OAuth URL</h4>
+          <textarea
+            id="discordAuthUrlText"
+            readonly
+            style="
+              width: 100%;
+              height: 80px;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              font-size: 11px;
+              font-family: monospace;
+              resize: vertical;
+              margin-bottom: 10px;
+            "
+          >
+          </textarea>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button class="btn-secondary" onclick="copyDiscordAuthUrl()">
+              📋 কপি করুন
+            </button>
+            <button class="btn-secondary" onclick="redirectToDiscordUrl()">
+              🔀 Redirect করুন
+            </button>
+            <button class="btn-secondary" onclick="closeDiscordUrlSection()">
+              ❌ বন্ধ করুন
+            </button>
+          </div>
+        </div>
+
+        <button id="appleSignInBtn" class="btn btn-apple">
+          <svg class="icon" fill="white" viewBox="0 0 24 24">
+            <path
+              d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+            />
+          </svg>
+          Sign in with Apple
+        </button>
+
+        <div class="divider">
+          <span>Test Authentication</span>
+        </div>
+      </div>
+
+      <!-- Token Display & Actions -->
+      <div id="tokenSection" class="token-section" style="display: none">
+        <h3>🔑 Firebase ID Token</h3>
+        <div class="token-box">
+          <textarea
+            id="idTokenTextarea"
+            class="token-textarea"
+            readonly
+            placeholder="Token will appear here..."
+          ></textarea>
+          <button id="copyIdTokenBtn" class="copy-btn">কপি করুন</button>
+        </div>
+        <div class="actions-row">
+          <button id="sendBackendBtn" class="btn-secondary">
+            ব্যাকএন্ডে পাঠান
+          </button>
+          <button id="clearTokenBtn" class="btn-secondary">ক্লিয়ার</button>
+        </div>
+      </div>
+
+      <!-- Logout Button -->
+      <div id="logoutSection" style="display: none">
+        <button id="logoutBtn" class="btn btn-logout">Logout</button>
+      </div>
+
+      <!-- User Info Display -->
+      <div id="userInfo" class="user-info">
+        <h3>✅ Logged In Successfully!</h3>
+        <div class="info-item">
+          <strong>Email:</strong>
+          <span id="userEmail">-</span>
+        </div>
+        <div class="info-item">
+          <strong>Name:</strong>
+          <span id="userName">-</span>
+        </div>
+        <div class="info-item">
+          <strong>User ID:</strong>
+          <span id="userId">-</span>
+        </div>
+        <div class="info-item">
+          <strong>Username:</strong>
+          <span id="userUsername">-</span>
+        </div>
+        <div class="info-item">
+          <strong>Provider:</strong>
+          <span id="userProvider">-</span>
+        </div>
+        <div class="info-item">
+          <strong>JWT Token:</strong>
+          <span id="userToken" style="word-break: break-all; font-size: 11px"
+            >-</span
+          >
+        </div>
+
+        <div class="response-data">
+          <strong>Backend Response:</strong>
+          <pre id="backendResponse">-</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+      import {
+        getAuth,
+        signInWithPopup,
+        GoogleAuthProvider,
+        FacebookAuthProvider,
+        GithubAuthProvider,
+        OAuthProvider,
+        signOut,
+      } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+      // Firebase configuration (fetched from backend env; falls back to default values)
+      let firebaseConfig;
+      let app;
+      let auth;
+
+      const defaultFirebaseConfig = {
+        apiKey: 'AIzaSyCwlKwAvJJ_e0nLLX84Xqn9h5bQtARsycM',
+        authDomain: 'jconnect-b6f89.firebaseapp.com',
+        projectId: 'jconnect-b6f89',
+        storageBucket: 'jconnect-b6f89.firebasestorage.app',
+        messagingSenderId: '117806012294',
+        appId: '1:117806012294:web:bb4bcde2c7fd65fed93e07',
+        measurementId: 'G-81J9NQ13DG',
+      };
+
+      async function loadFirebaseConfig() {
+        if (firebaseConfig) return firebaseConfig;
+
+        try {
+          const response = await fetch('/auth/firebase-config');
+          const data = await response.json();
+          if (!response.ok || !data?.config?.apiKey) {
+            throw new Error(data?.message || 'Config missing');
+          }
+          firebaseConfig = data.config;
+          showStatus('✅ Firebase config loaded from server', 'success');
+        } catch (error) {
+          console.warn('Firebase config fetch failed, using fallback:', error);
+          firebaseConfig = defaultFirebaseConfig;
+          showStatus('⚠️ Using fallback Firebase config', 'info');
+        }
+        return firebaseConfig;
+      }
+
+      async function ensureFirebaseReady() {
+        if (app && auth) return { app, auth };
+
+        const config = await loadFirebaseConfig();
+        app = initializeApp(config);
+        auth = getAuth(app);
+        return { app, auth };
+      }
+
+      // Backend API URL
+      let BACKEND_URL =
+        localStorage.getItem('backendUrl') ||
+        'http://localhost:5050/auth/firebase-login';
+      document.getElementById('backendUrl').value = BACKEND_URL;
+
+      // DOM Elements
+      const googleSignInBtn = document.getElementById('googleSignInBtn');
+      const facebookSignInBtn = document.getElementById('facebookSignInBtn');
+      const githubSignInBtn = document.getElementById('githubSignInBtn');
+      const discordSignInBtn = document.getElementById('discordSignInBtn');
+      const appleSignInBtn = document.getElementById('appleSignInBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const saveBtn = document.getElementById('saveBtn');
+      const statusMessage = document.getElementById('statusMessage');
+      const userInfo = document.getElementById('userInfo');
+      const loginSection = document.getElementById('loginSection');
+      const logoutSection = document.getElementById('logoutSection');
+      const tokenSection = document.getElementById('tokenSection');
+      const idTokenTextarea = document.getElementById('idTokenTextarea');
+      const copyIdTokenBtn = document.getElementById('copyIdTokenBtn');
+      const sendBackendBtn = document.getElementById('sendBackendBtn');
+      const clearTokenBtn = document.getElementById('clearTokenBtn');
+
+      // Save backend URL
+      saveBtn.addEventListener('click', function () {
+        const input = document.getElementById('backendUrl');
+        BACKEND_URL = input.value.trim();
+        localStorage.setItem('backendUrl', BACKEND_URL);
+        showStatus('✅ Backend URL saved: ' + BACKEND_URL, 'success');
+      });
+
+      // Show status message
+      function showStatus(message, type = 'info') {
+        statusMessage.textContent = message;
+        statusMessage.className = `status ${type}`;
+        statusMessage.style.display = 'block';
+
+        if (type === 'success' || type === 'error') {
+          setTimeout(() => {
+            statusMessage.style.display = 'none';
+          }, 5000);
+        }
+      }
+
+      // Display user info
+      function displayUserInfo(backendResponse) {
+        // Support both response shapes
+        const user = backendResponse.user || backendResponse.data?.user || {};
+        const token =
+          backendResponse.access_token || backendResponse.data?.token;
+
+        document.getElementById('userEmail').textContent = user.email || '-';
+        document.getElementById('userName').textContent =
+          user.full_name || user.name || '-';
+        document.getElementById('userId').textContent = user.id || '-';
+        document.getElementById('userUsername').textContent =
+          user.username || '-';
+        document.getElementById('userProvider').textContent =
+          user.auth_provider || backendResponse.provider || '-';
+        document.getElementById('userToken').textContent = token ? token : '-';
+        document.getElementById('backendResponse').textContent = JSON.stringify(
+          backendResponse,
+          null,
+          2,
+        );
+
+        userInfo.classList.add('show');
+        loginSection.style.display = 'none';
+        logoutSection.style.display = 'block';
+      }
+
+      // Show ID token in the UI
+      function showIdToken(idToken) {
+        idTokenTextarea.value = idToken || '';
+        tokenSection.style.display = idToken ? 'block' : 'none';
+        tokenSection.classList.toggle('show', !!idToken);
+      }
+
+      // Copy helper
+      async function copyTextFrom(el) {
+        const text = typeof el === 'string' ? el : el.value;
+        try {
+          await navigator.clipboard.writeText(text);
+          showStatus('✅ টোকেন কপি হয়েছে', 'success');
+        } catch (err) {
+          console.error('Clipboard error:', err);
+          showStatus('❌ কপি করা যায়নি', 'error');
+        }
+      }
+
+      // Send token to backend
+      async function sendTokenToBackend(idToken, provider) {
+        try {
+          showStatus('Sending token to backend...', 'info');
+
+          const response = await fetch(BACKEND_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              token: idToken, // for /auth/google-login backend
+              idToken, // for older /auth/firebase-login backend
+              provider,
+              username: '',
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Backend authentication failed');
+          }
+
+          showStatus('✅ Successfully authenticated with backend!', 'success');
+          displayUserInfo(data);
+
+          return data;
+        } catch (error) {
+          console.error('Backend Error:', error);
+          showStatus(`❌ Backend Error: ${error.message}`, 'error');
+          throw error;
+        }
+      }
+
+      // Google Sign-In
+      googleSignInBtn.addEventListener('click', async () => {
+        try {
+          await ensureFirebaseReady();
+          googleSignInBtn.disabled = true;
+          googleSignInBtn.innerHTML =
+            '<div class="loading"></div> Signing in...';
+          showStatus('Opening Google Sign-In...', 'info');
+
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+
+          showStatus('Getting Firebase token...', 'info');
+          const idToken = await result.user.getIdToken();
+
+          console.log('Firebase User:', result.user);
+          console.log('ID Token:', idToken);
+          // Show token and enable actions instead of auto-sending
+          showIdToken(idToken);
+          copyIdTokenBtn.onclick = () => copyTextFrom(idTokenTextarea);
+          sendBackendBtn.onclick = () => sendTokenToBackend(idToken, 'google');
+          clearTokenBtn.onclick = () => showIdToken('');
+        } catch (error) {
+          console.error('Google Sign-In Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          googleSignInBtn.disabled = false;
+          googleSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                `;
+        }
+      });
+
+      // Facebook Sign-In
+      facebookSignInBtn.addEventListener('click', async () => {
+        try {
+          await ensureFirebaseReady();
+          facebookSignInBtn.disabled = true;
+          facebookSignInBtn.innerHTML =
+            '<div class="loading"></div> Signing in...';
+          showStatus('Opening Facebook Sign-In...', 'info');
+
+          const provider = new FacebookAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+
+          showStatus('Getting Firebase token...', 'info');
+          const idToken = await result.user.getIdToken();
+
+          console.log('Firebase User:', result.user);
+          console.log('ID Token:', idToken);
+          showIdToken(idToken);
+          copyIdTokenBtn.onclick = () => copyTextFrom(idTokenTextarea);
+          sendBackendBtn.onclick = () =>
+            sendTokenToBackend(idToken, 'facebook');
+          clearTokenBtn.onclick = () => showIdToken('');
+        } catch (error) {
+          console.error('Facebook Sign-In Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          facebookSignInBtn.disabled = false;
+          facebookSignInBtn.innerHTML = `
+                  <svg class="icon" viewBox="0 0 24 24" fill="white">
+                    <path d="M22.675 0h-21.35C.595 0 0 .595 0 1.326v21.348C0 23.405.595 24 1.326 24h11.495v-9.294H9.691v-3.622h3.13V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12V24h6.116C23.405 24 24 23.405 24 22.674V1.326C24 .595 23.405 0 22.675 0z"/>
+                  </svg>
+                  Sign in with Facebook
+              `;
+        }
+      });
+
+      // GitHub Sign-In
+      githubSignInBtn.addEventListener('click', async () => {
+        try {
+          await ensureFirebaseReady();
+          githubSignInBtn.disabled = true;
+          githubSignInBtn.innerHTML =
+            '<div class="loading"></div> Signing in...';
+          showStatus('Opening GitHub Sign-In...', 'info');
+
+          const provider = new GithubAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+
+          showStatus('Getting Firebase token...', 'info');
+          const idToken = await result.user.getIdToken();
+
+          console.log('Firebase User:', result.user);
+          console.log('ID Token:', idToken);
+          showIdToken(idToken);
+          copyIdTokenBtn.onclick = () => copyTextFrom(idTokenTextarea);
+          sendBackendBtn.onclick = () => sendTokenToBackend(idToken, 'github');
+          clearTokenBtn.onclick = () => showIdToken('');
+        } catch (error) {
+          console.error('GitHub Sign-In Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          githubSignInBtn.disabled = false;
+          githubSignInBtn.innerHTML = `
+                  <svg class="icon" viewBox="0 0 24 24" fill="white">
+                    <path d="M12 .5C5.73.5.82 5.41.82 11.69c0 4.9 3.18 9.06 7.59 10.53.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.93-3.09.67-3.74-1.49-3.74-1.49-.51-1.29-1.24-1.64-1.24-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.69-1.79 1.88-2.31 0 0 .81-.37 1.97-.37 1.16 0 1.97.37 1.97.37 1.19.52.88 2.41 1.88 2.31 0 0 .6-1.08 1.73-1.16 0 0 1.1-.01.08.69 0 0-.73.35-1.24 1.64 0 0-.64 2.16-3.74 1.49-.01.95-.02 1.66-.02 1.93 0 .3.2.65.78.54 4.4-1.47 7.58-5.63 7.58-10.53C23.18 5.41 18.27.5 12 .5z"/>
+                  </svg>
+                  Sign in with GitHub
+              `;
+        }
+      });
+
+      // Discord Sign-In
+      discordSignInBtn.addEventListener('click', async () => {
+        try {
+          discordSignInBtn.disabled = true;
+          discordSignInBtn.innerHTML = '<div class="loading"></div> Loading...';
+          showStatus('Fetching Discord OAuth URL...', 'info');
+
+          // Fetch Discord Auth URL from backend
+          const response = await fetch(
+            'http://localhost:6545/auth/discord-auth-url',
+          );
+          const data = await response.json();
+
+          if (data.success) {
+            // Show URL in textarea
+            document.getElementById('discordAuthUrlText').value = data.url;
+            document.getElementById('discordUrlSection').style.display =
+              'block';
+            showStatus(
+              '✅ Discord URL loaded! Click "Redirect করুন" or copy & paste URL',
+              'success',
+            );
+          } else {
+            throw new Error('Failed to get Discord URL');
+          }
+        } catch (error) {
+          console.error('Discord URL Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          discordSignInBtn.disabled = false;
+          discordSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24" fill="white">
+                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.885-1.515a.07.07 0 00-.07.0328c-.211.3744-.444.8623-.607 1.25.5601.1055 1.1117.2237 1.6565.3652a.0698.0698 0 01.0611.0353c.3068.517.6049 1.0822.8881 1.6624a.0757.0757 0 01-.0386.0957c-1.2358.5789-2.5872 1.0289-3.9577 1.291a.077.077 0 00-.0387.0376c-.2171.4206-.4514.8417-.7044 1.2588a.073.073 0 00.0087.0917c2.9482 2.2092 6.647 3.5623 10.6445 3.5623.3618 0 .7188-.0117 1.0742-.0354a.073.073 0 00.0703-.0582c.273-.883.481-1.779.612-2.475.063-.360.117-.7144.166-1.0742a.076.076 0 00-.0378-.0818A19.7496 19.7496 0 0020.317 4.3698zM8.02 15.3312c-.7475 0-1.3633-.6765-1.3633-1.506s.6158-1.506 1.3633-1.506c.7346 0 1.3634.6765 1.3634 1.506.0039.8295-.6288 1.506-1.3634 1.506zm5.645 0c-.7475 0-1.3633-.6765-1.3633-1.506s.6158-1.506 1.3633-1.506c.7346 0 1.3634.6765 1.3634 1.506 0 .8295-.6288 1.506-1.3634 1.506z"/>
+                    </svg>
+                    Discord দিয়ে লগইন করুন
+                `;
+        }
+      });
+
+      // Discord URL Functions
+      function copyDiscordAuthUrl() {
+        const urlText = document.getElementById('discordAuthUrlText');
+        urlText.select();
+        document.execCommand('copy');
+        showStatus('✅ Discord URL কপি হয়েছে! (Copied!)', 'success');
+      }
+
+      function redirectToDiscordUrl() {
+        const url = document.getElementById('discordAuthUrlText').value;
+        if (url) {
+          showStatus('🔀 Redirecting to Discord...', 'info');
+          window.location.href = url;
+        } else {
+          showStatus('❌ URL not found', 'error');
+        }
+      }
+
+      function closeDiscordUrlSection() {
+        document.getElementById('discordUrlSection').style.display = 'none';
+        discordSignInBtn.disabled = false;
+        discordSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24" fill="white">
+                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.885-1.515a.07.07 0 00-.07.0328c-.211.3744-.444.8623-.607 1.25.5601.1055 1.1117.2237 1.6565.3652a.0698.0698 0 01.0611.0353c.3068.517.6049 1.0822.8881 1.6624a.0757.0757 0 01-.0386.0957c-1.2358.5789-2.5872 1.0289-3.9577 1.291a.077.077 0 00-.0387.0376c-.2171.4206-.4514.8417-.7044 1.2588a.073.073 0 00.0087.0917c2.9482 2.2092 6.647 3.5623 10.6445 3.5623.3618 0 .7188-.0117 1.0742-.0354a.073.073 0 00.0703-.0582c.273-.883.481-1.779.612-2.475.063-.360.117-.7144.166-1.0742a.076.076 0 00-.0378-.0818A19.7496 19.7496 0 0020.317 4.3698zM8.02 15.3312c-.7475 0-1.3633-.6765-1.3633-1.506s.6158-1.506 1.3633-1.506c.7346 0 1.3634.6765 1.3634 1.506.0039.8295-.6288 1.506-1.3634 1.506zm5.645 0c-.7475 0-1.3633-.6765-1.3633-1.506s.6158-1.506 1.3633-1.506c.7346 0 1.3634.6765 1.3634 1.506 0 .8295-.6288 1.506-1.3634 1.506z"/>
+                    </svg>
+                    Discord দিয়ে লগইন করুন
+                `;
+      }
+
+      // Handle OAuth callback from server (Discord)
+      function handleOAuthCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        const refreshToken = urlParams.get('refresh_token');
+        const userData = urlParams.get('user');
+        const error = urlParams.get('error');
+
+        if (error) {
+          showStatus(`❌ OAuth Error: ${error}`, 'error');
+          console.error('OAuth Error:', error);
+          return;
+        }
+
+        if (accessToken && userData) {
+          try {
+            const user = JSON.parse(decodeURIComponent(userData));
+            const backendResponse = {
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              user: user,
+              provider: user.auth_provider || 'discord',
+            };
+
+            // Store tokens in localStorage
+            localStorage.setItem('accessToken', accessToken);
+            if (refreshToken) {
+              localStorage.setItem('refreshToken', refreshToken);
+            }
+            localStorage.setItem('user', JSON.stringify(user));
+
+            // Set cookies
+            document.cookie = `accessToken=${accessToken}; path=/`;
+            if (refreshToken) {
+              document.cookie = `refreshToken=${refreshToken}; path=/`;
+            }
+
+            displayUserInfo(backendResponse);
+            showStatus('✅ Discord authentication successful!', 'success');
+
+            // Clear URL parameters
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname,
+            );
+          } catch (parseError) {
+            console.error('Error parsing user data:', parseError);
+            showStatus('❌ Error processing authentication', 'error');
+          }
+        }
+      }
+
+      // Apple Sign-In
+      appleSignInBtn.addEventListener('click', async () => {
+        try {
+          await ensureFirebaseReady();
+          appleSignInBtn.disabled = true;
+          appleSignInBtn.innerHTML =
+            '<div class="loading"></div> Signing in...';
+          showStatus('Opening Apple Sign-In...', 'info');
+
+          const provider = new OAuthProvider('apple.com');
+          const result = await signInWithPopup(auth, provider);
+
+          showStatus('Getting Firebase token...', 'info');
+          const idToken = await result.user.getIdToken();
+
+          console.log('Firebase User:', result.user);
+          console.log('ID Token:', idToken);
+          // Show token and enable actions
+          showIdToken(idToken);
+          copyIdTokenBtn.onclick = () => copyTextFrom(idTokenTextarea);
+          sendBackendBtn.onclick = () => sendTokenToBackend(idToken, 'apple');
+          clearTokenBtn.onclick = () => showIdToken('');
+        } catch (error) {
+          console.error('Apple Sign-In Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+          appleSignInBtn.disabled = false;
+          appleSignInBtn.innerHTML = `
+                    <svg class="icon" fill="white" viewBox="0 0 24 24">
+                        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </svg>
+                    Sign in with Apple
+                `;
+        }
+      });
+
+      // Logout
+      logoutBtn.addEventListener('click', async () => {
+        try {
+          await signOut(auth);
+
+          userInfo.classList.remove('show');
+          loginSection.style.display = 'block';
+          logoutSection.style.display = 'none';
+
+          showStatus('Logged out successfully', 'success');
+
+          // Hide token box
+          showIdToken('');
+
+          googleSignInBtn.disabled = false;
+          appleSignInBtn.disabled = false;
+          facebookSignInBtn.disabled = false;
+          githubSignInBtn.disabled = false;
+          googleSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Sign in with Google
+                `;
+          appleSignInBtn.innerHTML = `
+                    <svg class="icon" fill="white" viewBox="0 0 24 24">
+                        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                    </svg>
+                    Sign in with Apple
+                `;
+          facebookSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24" fill="white">
+                      <path d="M22.675 0h-21.35C.595 0 0 .595 0 1.326v21.348C0 23.405.595 24 1.326 24h11.495v-9.294H9.691v-3.622h3.13V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.312h3.587l-.467 3.622h-3.12V24h6.116C23.405 24 24 23.405 24 22.674V1.326C24 .595 23.405 0 22.675 0z"/>
+                    </svg>
+                    Sign in with Facebook
+                `;
+          githubSignInBtn.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24" fill="white">
+                      <path d="M12 .5C5.73.5.82 5.41.82 11.69c0 4.9 3.18 9.06 7.59 10.53.56.1.77-.24.77-.54 0-.27-.01-.98-.02-1.93-3.09.67-3.74-1.49-3.74-1.49-.51-1.29-1.24-1.64-1.24-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.69-1.79 1.88-2.31 0 0 .81-.37 1.97-.37 1.16 0 1.97.37 1.97.37 1.19.52.88 2.41 1.88 2.31 0 0 .6-1.08 1.73-1.16 0 0 1.1-.01.08.69 0 0-.73.35-1.24 1.64 0 0-.64 2.16-3.74 1.49-.01.95-.02 1.66-.02 1.93 0 .3.2.65.78.54 4.4-1.47 7.58-5.63 7.58-10.53C23.18 5.41 18.27.5 12 .5z"/>
+                    </svg>
+                    Sign in with GitHub
+                `;
+        } catch (error) {
+          console.error('Logout Error:', error);
+          showStatus(`❌ Error: ${error.message}`, 'error');
+        }
+      });
+
+      // Initial status
+      ensureFirebaseReady().catch((error) => {
+        console.error('Firebase init error:', error);
+        showStatus(`❌ Firebase config missing: ${error.message}`, 'error');
+      });
+      console.log('Backend URL:', BACKEND_URL);
+
+      // Handle OAuth callback from Discord
+      handleOAuthCallback();
+    </script>
+  </body>
+</html>

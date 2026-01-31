@@ -21,6 +21,12 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
     super();
   }
 
+  // collcected payload from access token from jwt strategy
+  async validate(payload: any) {
+    console.log('validate payload', payload);
+    return payload;
+  }
+
   async canActivate(context: ExecutionContext): Promise<any> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
@@ -32,9 +38,6 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       request.headers['authorization']?.replace('Bearer ', '') ||
       request.cookies?.access_token;
 
-    // console.log('access  ))))))))))))))))))', accessToken);
-    // console.log('refresh ((((((((((((((((((', refreshToken);
-
     let accessTokenValid = false;
     let refreshTokenValid = false;
     let decodedAccessToken = null;
@@ -44,8 +47,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       try {
         const decoded = this.jwtService.verify(accessToken);
         if (decoded && decoded.id) {
-          console.log('------------------------------------------------');
-          console.log('accessValid');
+         
 
           accessTokenValid = true;
         }
@@ -57,24 +59,21 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
       try {
         const decoded = this.jwtService.verify(refreshToken);
         if (decoded && decoded.id) {
-          console.log('refreshvalid');
-          console.log('------------------------------------------------');
+
           refreshTokenValid = true;
         }
-      } catch (err) {
-
+      } catch (err) { 
         refreshTokenValid = false;
       }
     }
 
     if (!accessTokenValid && !refreshTokenValid) {
-      request.user = null;
       // Clear cookies to force logout
       if (response.clearCookie) {
         response.clearCookie('access_token');
         response.clearCookie('refresh_token');
       }
-      return false;
+      throw new UnauthorizedException('Both tokens are invalid');
     }
 
     // Scenario 2: Access token invalid, Refresh token valid → Generate new access token only
@@ -92,17 +91,36 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
           };
           const newAccessToken =
             await this.authService.generateAccessTokenOnly(tokenPayload);
+
+          const newRefreshToken =
+            await this.authService.generateRefreshTokenOnly(
+              tokenPayload,
+              refreshToken,
+            );
+
           if (newAccessToken) {
             request.user = tokenPayload;
 
             response.locals.activeAccessToken = newAccessToken;
-            response.locals.activeRefreshToken = refreshToken;
+            response.locals.activeRefreshToken = newRefreshToken;
 
             const isProduction = process.env.NODE_ENV === 'production';
-            const accessTokenExpirMs =
-              this.configService.get<number>('ACCESS_TOKEN_EXPIRATION_MS') ||
-              15 * 60 * 1000;
+            const accessTokenConfigMs = Number(
+              this.configService.get('ACCESS_TOKEN_EXPIRATION_MS'),
+            );
+            const accessTokenExpirMs = Math.floor(
+              isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
+            );
+            const refreshTokenConfigMs = Number(
+              this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+            );
+            const refreshTokenExpirMs = Math.floor(
+              isNaN(refreshTokenConfigMs)
+                ? 7 * 24 * 60 * 60 * 1000
+                : refreshTokenConfigMs,
+            );
 
+            response.setHeader('X-New-Refresh-Token', newRefreshToken);
             response.setHeader('X-New-Access-Token', newAccessToken);
 
             if (response.cookie) {
@@ -112,29 +130,32 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
                 sameSite: 'lax',
                 maxAge: accessTokenExpirMs,
               });
+              response.cookie('refresh_token', newRefreshToken, {
+                httpOnly: false,
+                secure: isProduction,
+                sameSite: 'lax',
+                maxAge: refreshTokenExpirMs,
+              });
             }
 
             return true;
           }
         }
       } catch (err) {
-        // Failed to regenerate access token, clear user
         console.error(
           'Scenario 2 - Access token regeneration failed:',
           err.message,
         );
         request.user = null;
         return false;
-      } 
+      }
     }
 
     // Scenario 3: Access token valid, Refresh token invalid/expired → Regenerate only refresh token
-    console.log(accessTokenValid, 'first commemnt', accessToken);
-    console.log(refreshTokenValid, 'second commemnt', refreshToken);
+   
 
     if (accessTokenValid && !refreshTokenValid) {
       try {
-        console.log('try comment');
         // Generate only new refresh token, keep the valid access token
         const decodedAccessToken = this.jwtService.decode(accessToken);
         const tokenPayload = {
@@ -143,7 +164,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
           name: decodedAccessToken.name,
           role: decodedAccessToken.role,
         };
-        
+
         const newRefreshToken = await this.authService.generateRefreshTokenOnly(
           tokenPayload,
           refreshToken, // Pass old refresh token for cleanup
@@ -151,14 +172,19 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
 
         // Attach only the new refresh token (keep access token as is)
         const isProduction = process.env.NODE_ENV === 'production';
-        const refreshTokenExpirMs =
-          this.configService.get<number>('REFRESH_TOKEN_EXPIRATION_MS') ||
-          7 * 24 * 60 * 60 * 1000;
+        const refreshTokenConfigMs = Number(
+          this.configService.get('REFRESH_TOKEN_EXPIRATION_MS'),
+        );
+        const refreshTokenExpirMs = Math.floor(
+          isNaN(refreshTokenConfigMs)
+            ? 7 * 24 * 60 * 60 * 1000
+            : refreshTokenConfigMs,
+        );
 
         response.setHeader('X-New-Refresh-Token', newRefreshToken);
 
         // Attach to response locals so controllers can include it in response body
-        response.locals.activeAccessToken = accessToken;
+        // response.locals.activeAccessToken = accessToken;
         response.locals.activeRefreshToken = newRefreshToken;
 
         if (response.cookie) {
@@ -169,6 +195,7 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
             maxAge: refreshTokenExpirMs,
           });
         }
+        request.user = tokenPayload;
 
         return true;
       } catch (err) {
@@ -183,8 +210,13 @@ export class OptionalJwtGuard extends AuthGuard('jwt') {
 
     // Scenario 4: Both tokens valid → Everything is fine
     if (accessTokenValid && refreshTokenValid) {
-      response.locals.activeRefreshToken = refreshToken;
-      response.locals.activeAccessToken = accessToken;
+      const decodedAccessToken = this.jwtService.decode(accessToken);
+      request.user = {
+        id: decodedAccessToken.id,
+        email: decodedAccessToken.email,
+        name: decodedAccessToken.name,
+        role: decodedAccessToken.role,
+      };
       return true;
     }
   }

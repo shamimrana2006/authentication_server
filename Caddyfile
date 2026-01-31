@@ -1,17 +1,21 @@
+### reverse_proxy container_name:port
+### reverse_proxy localhost:port
+### reverse_proxy localhost == host.docker.internal for in docker 
+
 # Frontend
-shamimrana.me {
-    reverse_proxy frontend:8545
-}
+#shamimrana.me {
+#   reverse_proxy frontend:8545
+#}
 
 # Backend API
-api.shamimrana.me {
-    reverse_proxy localhost:5090
+:8005, domain.com {
+    reverse_proxy host.docker.internal:5090
 }
 
 # prisma studio
-db.shamimrana.me {
+:8006, domain.com {
      basicauth {
         shamimrana2006 $2y$10$/x6ntJtyiAp/NAJlWZlYK.ikj517KYpgqgC.pg4xY32LrLpH6qc6y
     }
-    reverse_proxy prisma_studio:7896
+    reverse_proxy host.docker.internal:8462
 }

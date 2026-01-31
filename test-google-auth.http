@@ -1,0 +1,36 @@
+### Google Login/Register Test
+POST http://localhost:6545/auth/google-login
+Content-Type: application/json
+
+{
+  "token": "YOUR_FIREBASE_ID_TOKEN_HERE"
+}
+
+###
+
+### Get Current User (requires valid token)
+GET http://localhost:6545/auth/me
+Authorization: Bearer YOUR_ACCESS_TOKEN_HERE
+
+###
+
+### Refresh Token
+POST http://localhost:6545/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+}
+
+###
+
+### Test Regular Login (for comparison)
+POST http://localhost:6545/auth/login
+Content-Type: application/json
+
+{
+  "emailOrUsername": "user@example.com",
+  "password": "password123"
+}
+
+###
