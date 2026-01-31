@@ -83,7 +83,7 @@ services:
     image: caddy:latest
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    container_name: caddy
+    container_name: ${SERVER_NAME}_caddy
     restart: unless-stopped
     profiles:
       - prod
