@@ -8,14 +8,14 @@
 #}
 
 # Backend API
-:8000 {
+:8005, domain.com {
     reverse_proxy host.docker.internal:5090
 }
 
 # prisma studio
-:8001 {
+:8006, domain.com {
      basicauth {
         shamimrana2006 $2y$10$/x6ntJtyiAp/NAJlWZlYK.ikj517KYpgqgC.pg4xY32LrLpH6qc6y
     }
-    reverse_proxy localhost:8462
+    reverse_proxy host.docker.internal:8462
 }
