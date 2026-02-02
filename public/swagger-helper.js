@@ -1,9 +1,9 @@
-/**
- * Swagger Auto-Authorization from Cookies
- * This script automatically sets Swagger authorization from browser cookies
- */
+/
 
-console.log('%c🔧 Swagger Auto-Auth Helper Loading...', 'color: #00ff00; font-weight: bold;');
+console.log(
+  '%c🔧 Swagger Auto-Auth Helper Loading...',
+  'color: #00ff00; font-weight: bold;',
+);
 
 // Function to get cookie by name
 function getCookie(name) {
@@ -19,7 +19,10 @@ function autoAuthorizeSwagger() {
   const refreshToken = getCookie('refresh_token');
 
   if (!accessToken && !refreshToken) {
-    console.log('%c⚠️ No tokens found in cookies', 'color: #ff9900; font-weight: bold;');
+    console.log(
+      '%c⚠️ No tokens found in cookies',
+      'color: #ff9900; font-weight: bold;',
+    ); 
     console.log('%cPlease login first: POST /auth/login', 'color: #ffffff;');
     return false;
   }
@@ -29,9 +32,18 @@ function autoAuthorizeSwagger() {
     if (window.ui && window.ui.authActions) {
       clearInterval(checkSwaggerUI);
 
-      console.log('%c\n═══════════════════════════════════════════', 'color: #00ff00;');
-      console.log('%c🎉 AUTO-AUTHORIZING SWAGGER UI...', 'color: #00ff00; font-size: 16px; font-weight: bold;');
-      console.log('%c═══════════════════════════════════════════', 'color: #00ff00;');
+      console.log(
+        '%c\n═══════════════════════════════════════════',
+        'color: #00ff00;',
+      );
+      console.log(
+        '%c🎉 AUTO-AUTHORIZING SWAGGER UI...',
+        'color: #00ff00; font-size: 16px; font-weight: bold;',
+      );
+      console.log(
+        '%c═══════════════════════════════════════════',
+        'color: #00ff00;',
+      );
 
       try {
         // Build authorization object in the format Swagger UI expects
@@ -41,33 +53,63 @@ function autoAuthorizeSwagger() {
           authorizationsObject['JWT-auth'] = {
             name: 'JWT-auth',
             schema: { type: 'http', scheme: 'bearer', in: 'header' },
-            value: accessToken
+            value: accessToken,
           };
-          console.log('%c✅ JWT-auth Token Set', 'color: #00ff00;', accessToken.substring(0, 30) + '...');
+          console.log(
+            '%c✅ JWT-auth Token Set',
+            'color: #00ff00;',
+            accessToken.substring(0, 30) + '...',
+          );
         }
 
         if (refreshToken) {
           authorizationsObject['refresh-token'] = {
             name: 'refresh-token',
             schema: { type: 'apiKey', in: 'header', name: 'x-refresh-token' },
-            value: refreshToken
+            value: refreshToken,
           };
-          console.log('%c✅ Refresh Token Set', 'color: #00ff00;', refreshToken.substring(0, 30) + '...');
+          console.log(
+            '%c✅ Refresh Token Set',
+            'color: #00ff00;',
+            refreshToken.substring(0, 30) + '...',
+          );
         }
 
         // Use the authorize action to set the tokens
         window.ui.authActions.authorize(authorizationsObject);
 
-        console.log('%c\n🎊 SUCCESS! Swagger UI is now authorized!', 'color: #00ff00; font-weight: bold;');
-        console.log('%c✓ The 🔓 button should now show as 🔒 (locked)', 'color: #ffffff;');
-        console.log('%c✓ Click it to see the authorized tokens', 'color: #ffffff;');
-        console.log('%c✓ Protected endpoints are now accessible!', 'color: #ffffff;');
-        console.log('%c═══════════════════════════════════════════\n', 'color: #00ff00;');
+        console.log(
+          '%c\n🎊 SUCCESS! Swagger UI is now authorized!',
+          'color: #00ff00; font-weight: bold;',
+        );
+        console.log(
+          '%c✓ The 🔓 button should now show as 🔒 (locked)',
+          'color: #ffffff;',
+        );
+        console.log(
+          '%c✓ Click it to see the authorized tokens',
+          'color: #ffffff;',
+        );
+        console.log(
+          '%c✓ Protected endpoints are now accessible!',
+          'color: #ffffff;',
+        );
+        console.log(
+          '%c═══════════════════════════════════════════\n',
+          'color: #00ff00;',
+        );
 
         return true;
       } catch (error) {
-        console.error('%c❌ Auto-authorization failed:', 'color: #ff0000; font-weight: bold;', error);
-        console.log('%c💡 Fallback: Use manual authorization via button', 'color: #ffff00;');
+        console.error(
+          '%c❌ Auto-authorization failed:',
+          'color: #ff0000; font-weight: bold;',
+          error,
+        );
+        console.log(
+          '%c💡 Fallback: Use manual authorization via button',
+          'color: #ffff00;',
+        );
         showTokensForManualAuth();
       }
     }
@@ -77,7 +119,10 @@ function autoAuthorizeSwagger() {
   setTimeout(() => {
     clearInterval(checkSwaggerUI);
     if (!window.ui) {
-      console.log('%c⚠️ Swagger UI not found. Reload page if needed.', 'color: #ff9900;');
+      console.log(
+        '%c⚠️ Swagger UI not found. Reload page if needed.',
+        'color: #ff9900;',
+      );
     }
   }, 10000);
 }
@@ -87,17 +132,35 @@ function showTokensForManualAuth() {
   const accessToken = getCookie('access_token');
   const refreshToken = getCookie('refresh_token');
 
-  console.log('%c\n🔓 MANUAL AUTHORIZATION:', 'color: #00aaff; font-weight: bold;');
-  console.log('%cClick the Authorize button and paste these tokens:', 'color: #ffffff;');
+  console.log(
+    '%c\n🔓 MANUAL AUTHORIZATION:',
+    'color: #00aaff; font-weight: bold;',
+  );
+  console.log(
+    '%cClick the Authorize button and paste these tokens:',
+    'color: #ffffff;',
+  );
 
   if (accessToken) {
-    console.log('%c\n📋 JWT-auth (Access Token):', 'color: #00aaff; font-weight: bold;');
-    console.log('%c' + accessToken, 'background: #000; color: #0f0; padding: 5px; font-family: monospace;');
+    console.log(
+      '%c\n📋 JWT-auth (Access Token):',
+      'color: #00aaff; font-weight: bold;',
+    );
+    console.log(
+      '%c' + accessToken,
+      'background: #000; color: #0f0; padding: 5px; font-family: monospace;',
+    );
   }
 
   if (refreshToken) {
-    console.log('%c\n📋 refresh-token (Refresh Token):', 'color: #00aaff; font-weight: bold;');
-    console.log('%c' + refreshToken, 'background: #000; color: #0f0; padding: 5px; font-family: monospace;');
+    console.log(
+      '%c\n📋 refresh-token (Refresh Token):',
+      'color: #00aaff; font-weight: bold;',
+    );
+    console.log(
+      '%c' + refreshToken,
+      'background: #000; color: #0f0; padding: 5px; font-family: monospace;',
+    );
   }
 
   console.log('\n');
@@ -116,31 +179,52 @@ if (document.readyState === 'loading') {
 // Re-authorize after login/refresh requests
 const originalFetch = window.fetch;
 window.fetch = function (...args) {
-  return originalFetch.apply(this, args).then(response => {
+  return originalFetch.apply(this, args).then((response) => {
     const url = args[0];
-    
+
     // Check for token refresh headers in ANY response
     const newAccessToken = response.headers.get('X-New-Access-Token');
     const newRefreshToken = response.headers.get('X-New-Refresh-Token');
-    
+
     if (newAccessToken || newRefreshToken) {
-      console.log('%c\n🔄 NEW TOKENS DETECTED!', 'color: #ffff00; font-weight: bold; font-size: 14px;');
-      console.log('%c   Access Token:', 'color: #00ff00;', newAccessToken ? '✅ Updated' : '⏭️ Unchanged');
-      console.log('%c   Refresh Token:', 'color: #00ff00;', newRefreshToken ? '✅ Updated' : '⏭️ Unchanged');
-      
+      console.log(
+        '%c\n🔄 NEW TOKENS DETECTED!',
+        'color: #ffff00; font-weight: bold; font-size: 14px;',
+      );
+      console.log(
+        '%c   Access Token:',
+        'color: #00ff00;',
+        newAccessToken ? '✅ Updated' : '⏭️ Unchanged',
+      );
+      console.log(
+        '%c   Refresh Token:',
+        'color: #00ff00;',
+        newRefreshToken ? '✅ Updated' : '⏭️ Unchanged',
+      );
+
       // Re-authorize Swagger with new tokens
       setTimeout(() => {
         autoAuthorizeSwagger();
-        console.log('%c🎉 Swagger authorization updated with new tokens!\n', 'color: #00ff00; font-weight: bold;');
+        console.log(
+          '%c🎉 Swagger authorization updated with new tokens!\n',
+          'color: #00ff00; font-weight: bold;',
+        );
       }, 500);
     }
-    
-    if (typeof url === 'string' && (url.includes('/auth/login') || url.includes('/auth/refresh-token'))) {
+
+    if (
+      typeof url === 'string' &&
+      (url.includes('/auth/login') || url.includes('/auth/refresh-token'))
+    ) {
       // Wait for cookies to be set
       setTimeout(() => {
-        const hasTokens = getCookie('access_token') || getCookie('refresh_token');
+        const hasTokens =
+          getCookie('access_token') || getCookie('refresh_token');
         if (hasTokens) {
-          console.log('%c\n🔄 New tokens detected! Re-authorizing Swagger UI...', 'color: #00ff00; font-weight: bold;');
+          console.log(
+            '%c\n🔄 New tokens detected! Re-authorizing Swagger UI...',
+            'color: #00ff00; font-weight: bold;',
+          );
           autoAuthorizeSwagger();
         }
       }, 1000);
@@ -151,7 +235,10 @@ window.fetch = function (...args) {
 
 // Expose functions globally for manual control
 window.reauthorizeSwagger = function () {
-  console.log('%c\n🔄 Manual re-authorization requested...', 'color: #00aaff; font-weight: bold;');
+  console.log(
+    '%c\n🔄 Manual re-authorization requested...',
+    'color: #00aaff; font-weight: bold;',
+  );
   autoAuthorizeSwagger();
 };
 
@@ -162,15 +249,101 @@ window.showTokens = function () {
 window.clearSwaggerAuth = function () {
   if (window.ui && window.ui.authActions) {
     window.ui.authActions.logout(['JWT-auth', 'refresh-token']);
-    console.log('%c✓ Swagger authorization cleared', 'color: #ff9900; font-weight: bold;');
-    console.log('%cYou can now manually authorize or re-run reauthorizeSwagger()', 'color: #ffffff;');
+    console.log(
+      '%c✓ Swagger authorization cleared',
+      'color: #ff9900; font-weight: bold;',
+    );
+    console.log(
+      '%cYou can now manually authorize or re-run reauthorizeSwagger()',
+      'color: #ffffff;',
+    );
   }
 };
 
 console.log('%c\n💡 Available Commands:', 'color: #00aaff; font-weight: bold;');
-console.log('%c  • reauthorizeSwagger()  - Auto-authorize from cookies', 'color: #ffffff;');
-console.log('%c  • showTokens()          - Display tokens for manual auth', 'color: #ffffff;');
-console.log('%c  • clearSwaggerAuth()    - Clear current authorization', 'color: #ffffff;');
-console.log('%c  • document.cookie       - View all cookies\n', 'color: #ffffff;');
+console.log(
+  '%c  • reauthorizeSwagger()  - Auto-authorize from cookies',
+  'color: #ffffff;',
+);
+console.log(
+  '%c  • showTokens()          - Display tokens for manual auth',
+  'color: #ffffff;',
+);
+console.log(
+  '%c  • clearSwaggerAuth()    - Clear current authorization',
+  'color: #ffffff;',
+);
+console.log(
+  '%c  • document.cookie       - View all cookies\n',
+  'color: #ffffff;',
+);
 
+// =============================================
+// Enable Multiple File Selection in Swagger UI
+// =============================================
 
+function enableMultipleFileSelection() {
+  console.log(
+    '%c🔧 Enabling multiple file selection...',
+    'color: #00ff00; font-weight: bold;',
+  );
+
+  const observer = new MutationObserver((mutations) => {
+    // Find all file input elements in Swagger UI
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+
+    fileInputs.forEach((input) => {
+      // Check if this input is for 'files' parameter (array of files)
+      const paramRow = input.closest('.parameters-col_description');
+      const paramName = paramRow?.textContent || '';
+
+      // Enable multiple selection for 'files' parameter
+      if (paramName.includes('files') && !input.hasAttribute('multiple')) {
+        input.setAttribute('multiple', 'multiple');
+        console.log(
+          '%c✅ Multiple file selection enabled for input',
+          'color: #00ff00;',
+        );
+      }
+    });
+  });
+
+  // Start observing the document for changes
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Also run immediately
+  setTimeout(() => {
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach((input) => {
+      const wrapper = input.closest('[data-param-name]');
+      const paramName =
+        wrapper?.getAttribute('data-param-name') || input.name || '';
+
+      if (paramName === 'files' || paramName.includes('files')) {
+        input.setAttribute('multiple', 'multiple');
+        console.log(
+          '%c✅ Multiple attribute added to files input',
+          'color: #00ff00;',
+        );
+      }
+    });
+  }, 2000);
+}
+
+// Enable multiple file selection on load
+setTimeout(enableMultipleFileSelection, 1500);
+
+// Re-enable after UI updates
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(enableMultipleFileSelection, 2000);
+  });
+}
+
+console.log(
+  '%c✨ Multiple file selection helper loaded!',
+  'color: #00ff00; font-weight: bold;',
+);

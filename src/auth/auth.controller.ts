@@ -8,10 +8,26 @@ import {
   Get,
   Put,
   Delete,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
+  Patch,
+  BadRequestException,
 } from '@nestjs/common';
+import {
+  FileInterceptor,
+  FileFieldsInterceptor,
+} from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { AuthService } from './auth.service';
 import { registerDto } from './dto/register.dto';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { loginDto } from './dto/login.dto';
 import { FirebaseAuthDto } from './dto/firebase-auth.dto';
@@ -125,7 +141,7 @@ export class AuthController {
       const accessTokenExpirMs = Math.floor(
         isNaN(accessTokenConfigMs) ? 15 * 60 * 1000 : accessTokenConfigMs,
       );
-      const refreshTokenExpirMs = Math.floor( 
+      const refreshTokenExpirMs = Math.floor(
         isNaN(refreshTokenConfigMs)
           ? 7 * 24 * 60 * 60 * 1000
           : refreshTokenConfigMs,
@@ -320,13 +336,96 @@ export class AuthController {
 
   // ==================== User Profile ====================
 
-  @Put('profile')
+  @Patch('profile')
   @ValidUser()
   @ApiBearerAuth('JWT-auth')
   @ApiBearerAuth('refresh-token')
   @ApiOperation({ summary: 'Update user profile' })
-  updateProfile(@Body() dto: UpdateProfileDto, @Req() req: any) {
-    return this.authService.updateProfile(req.user.id, dto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'User full name (optional)',
+          example: 'John Doe',
+        },
+        username: {
+          type: 'string',
+          description: 'Unique username (optional)',
+          example: '',
+        },
+        gender: {
+          type: 'string',
+          enum: ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'],
+          description: 'Gender (optional)',
+          example: 'MALE',
+        },
+        dateOfBirth: {
+          type: 'string',
+          format: 'date',
+          description: 'Date of birth (YYYY-MM-DD format, optional)',
+          example: '1990-01-15',
+        },
+        profilePhoto: {
+          type: 'string',
+          format: 'binary',
+          description:
+            'Profile photo (images only: jpeg, jpg, png, gif, webp, svg, optional)',
+        },
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description:
+            'Avatar (images only: jpeg, jpg, png, gif, webp, svg, optional)',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'profilePhoto', maxCount: 1 },
+        { name: 'avatar', maxCount: 1 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        fileFilter: (req, file, cb) => {
+          // Only accept image files
+          const allowedMimeTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/svg+xml',
+          ];
+          if (allowedMimeTypes.includes(file.mimetype)) {
+            cb(null, true);
+          } else {
+            cb(
+              new BadRequestException(
+                `Only image files are allowed. Received: ${file.mimetype}`,
+              ),
+              false,
+            );
+          }
+        },
+      },
+    ),
+  )
+  updateProfile(
+    @Body() dto: UpdateProfileDto,
+    @UploadedFiles()
+    files: {
+      profilePhoto?: Express.Multer.File[];
+      avatar?: Express.Multer.File[];
+    },
+    @Req() req: any,
+  ) {
+    return this.authService.updateProfile(req.user.id, dto, files);
   }
 
   // ==================== Discord OAuth ====================

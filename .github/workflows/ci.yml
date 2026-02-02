@@ -21,6 +21,10 @@ jobs:
       - name: Install dependencies
         run: pnpm i
 
+      - name: Install Express
+        run: pnpm add express
+
+
       - name: Run tests
         run: pnpm format
 

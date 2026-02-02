@@ -6,8 +6,11 @@ model User {
     password String? // Hashed password (null for OAuth users)
 
     // Profile
-    name   String?
-    avatar String  @default("https://i.pinimg.com/236x/1a/a8/d7/1aa8d75f3498784bcd2617b3e3d1e0c4.jpg")
+    name         String?
+    avatar       String    @default("https://i.pinimg.com/236x/1a/a8/d7/1aa8d75f3498784bcd2617b3e3d1e0c4.jpg")
+    profilePhoto String?
+    gender       String? // MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY
+    dateOfBirth  DateTime?
 
     // Email Verification
     emailVerified           Boolean   @default(false)

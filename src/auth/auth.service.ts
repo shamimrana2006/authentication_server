@@ -23,6 +23,7 @@ import { UpdateUsernameDto } from './dto/update-username.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ConfigService } from '@nestjs/config';
 import { FirebaseAuthService } from './services/firebase-auth.service';
+import { AwsService } from '../aws/aws.service';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,7 @@ export class AuthService {
     private emailService: EmailService,
     private configService: ConfigService,
     private firebaseAuthService: FirebaseAuthService,
+    private awsService: AwsService,
   ) {}
 
   async validateUser(emailOrUsername: string, password: string): Promise<any> {
@@ -650,15 +652,114 @@ export class AuthService {
     return user;
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto) {
-    await this.Prisma.client.user.update({
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    files?: {
+      profilePhoto?: Express.Multer.File[];
+      avatar?: Express.Multer.File[];
+    },
+  ) {
+    const updateData: any = {};
+
+    // Add name if provided
+    if (dto.name) {
+      updateData.name = dto.name;
+    }
+
+    // Add username if provided
+    if (dto.username) {
+      // Check if username is already taken
+      const existingUser = await this.Prisma.client.user.findUnique({
+        where: { username: dto.username },
+      });
+      if (existingUser && existingUser.id !== userId) {
+        throw new BadRequestException('Username already taken');
+      }
+      updateData.username = dto.username;
+    }
+
+    // Add gender if provided
+    if (dto.gender) {
+      updateData.gender = dto.gender;
+    }
+ 
+    // Add dateOfBirth if provided
+    if (dto.dateOfBirth) {
+      updateData.dateOfBirth = new Date(dto.dateOfBirth);
+    }
+
+    // Handle profilePhoto upload
+    if (files?.profilePhoto?.[0]) {
+      const uploadResult = await this.awsService.uploadProfilePhoto(
+        userId,
+        files.profilePhoto[0],
+      );
+      updateData.profilePhoto = uploadResult.url;
+    }
+
+    // Handle avatar upload
+    if (files?.avatar?.[0]) {
+      const uploadResult = await this.awsService.uploadProfilePhoto(
+        userId,
+        files.avatar[0],
+      );
+      updateData.avatar = uploadResult.url;
+    }
+
+    // If no data to update, just return current user
+    if (Object.keys(updateData).length === 0) {
+      const user = await this.Prisma.client.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          name: true,
+          avatar: true,
+          profilePhoto: true,
+          gender: true,
+          dateOfBirth: true,
+          emailVerified: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'No updates provided',
+        user,
+      };
+    }
+
+    // Update user in database and return updated user
+    const updatedUser = await this.Prisma.client.user.update({
       where: { id: userId },
-      data: dto,
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        avatar: true,
+        profilePhoto: true,
+        gender: true,
+        dateOfBirth: true,
+        emailVerified: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return {
       success: true,
       message: 'Profile updated successfully',
+      user: updatedUser,
     };
   }
 

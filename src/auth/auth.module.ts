@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller'; 
+import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -10,12 +10,14 @@ import { DiscordStrategy } from '@/lib/strategy/discord.strategy';
 import { EmailModule } from '../email/email.module';
 import { PassportModule } from '@nestjs/passport';
 import { FirebaseAuthService } from './services/firebase-auth.service';
+import { AwsModule } from '../aws/aws.module';
 
 @Module({
   imports: [
     UserModule,
     EmailModule,
     PassportModule,
+    AwsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

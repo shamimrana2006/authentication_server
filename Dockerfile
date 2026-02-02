@@ -4,8 +4,8 @@ WORKDIR /software
 COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm
 RUN pnpm install
-RUN pnpm add express
 RUN npm install -g prisma
+run pnpm add express
 
 COPY prisma ./prisma
 COPY prisma.config.ts ./
@@ -25,6 +25,6 @@ COPY --from=build /software/prisma ./prisma
 COPY --from=build /software/prisma.config.ts ./
 
 ENV NODE_ENV=production
-EXPOSE 6545
+EXPOSE 3200
 
 CMD ["npm", "run", "server:run:under:dockerimage"]

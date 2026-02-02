@@ -23,7 +23,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - ${SERVER_NAME}_net
+      - app-network
 
   server:
     image: ${IMMAGE_NAME}
@@ -43,7 +43,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - ${SERVER_NAME}_net
+      - app-network
 
   # frontend:
   #   image: ${IMMAGE_NAME}
@@ -57,7 +57,7 @@ services:
   #   ports:
   #     - '5080:8545'
   #   networks:
-  #     - ${SERVER_NAME}_net
+  #     - app-network
 
   prisma-studio:
     image: ${IMMAGE_NAME}
@@ -77,21 +77,21 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - ${SERVER_NAME}_net
+      - app-network
 
   caddy:
     image: caddy:latest
+    container_name: caddy
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    container_name: ${SERVER_NAME}_caddy
     restart: unless-stopped
     profiles:
       - prod
       - caddy
     ports:
       - '80:80'
-      - '8005:8005'
-      - '8006:8006'
+      - '8000:8000'
+      - '8001:8001'
       - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
@@ -103,10 +103,10 @@ services:
       # frontend:
       #   condition: service_started
     networks:
-      - ${SERVER_NAME}_net
+      - app-network
 
 networks:
-  ${SERVER_NAME}_net:
+  app-network:
     driver: bridge
 
 volumes:

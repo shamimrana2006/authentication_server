@@ -19,7 +19,8 @@ async function bootstrap() {
   const isTruthyEnv = (value?: string) =>
     ['true', '1', 'yes', 'on'].includes((value ?? '').toLowerCase());
 
-  // app.useStaticAssets(join(__dirname, '..', 'public'));
+  // Serve public folder for swagger-helper.js
+  app.useStaticAssets(join(__dirname, '..', 'public'));
 
   app.useStaticAssets(join(__dirname, 'auth'), {
     prefix: '/auth',
@@ -53,7 +54,7 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle(`${process.env.SERVER_NAME} API`)
+   .setTitle(`${process.env.SERVER_NAME} API`)
     .setDescription(`${process.env.SERVER_NAME} Authentication and User Management API`)
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
@@ -135,6 +136,7 @@ async function bootstrap() {
       persistAuthorization: true,
       withCredentials: true,
     },
+    customJs: '/swagger-helper.js',
   });
   await app.listen(port);
   console.log(`API docs available at http://localhost:${port}/api-docs`);
